@@ -22,7 +22,7 @@ You gain powerful mechanism for managing access levels, which include:
 
 
 ###Database schema###
-~[alt Laravel ACL Schema](https://cloud.githubusercontent.com/assets/5002331/4994391/dbe4772e-69b8-11e4-9562-514bccc90f22.png "Laravel ACL Schema")
+![alt Laravel ACL Schema](https://cloud.githubusercontent.com/assets/5002331/4994391/dbe4772e-69b8-11e4-9562-514bccc90f22.png "Laravel ACL Schema")
 
 ##Installation##
 * Add this package as required in composer:
