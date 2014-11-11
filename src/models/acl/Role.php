@@ -1,8 +1,10 @@
 <?php
 
-	namespace Acl;
+	namespace Signes\Acl\Model;
 
-	class Role extends \Eloquent {
+	use Signes\Acl\RoleInterface;
+
+	class Role extends \Eloquent implements RoleInterface {
 
 		/**
 		 * The database table used by the model.
@@ -17,7 +19,7 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 		 */
 		public function getPermissions() {
-			return $this->belongsToMany('Acl\\Permission', 'acl_role_permissions', 'role_id', 'permission_id')->withPivot('actions');
+			return $this->belongsToMany('Signes\\Acl\\Model\\Permission', 'acl_role_permissions', 'role_id', 'permission_id')->withPivot('actions');
 		}
 
 	}

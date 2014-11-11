@@ -1,8 +1,10 @@
 <?php
 
-	namespace Acl;
+	namespace Signes\Acl\Model;
 
-	class Group extends \Eloquent {
+	use Signes\Acl\GroupInterface;
+
+	class Group extends \Eloquent implements GroupInterface {
 
 		/**
 		 * The database table used by the model.
@@ -17,7 +19,7 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 		 */
 		public function getPermissions() {
-			return $this->belongsToMany('Acl\\Permission', 'acl_group_permissions', 'group_id', 'permission_id')->withPivot('actions');
+			return $this->belongsToMany('Signes\\Acl\\Model\\Permission', 'acl_group_permissions', 'group_id', 'permission_id')->withPivot('actions');
 		}
 
 		/**
@@ -26,6 +28,6 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 		 */
 		public function getRoles() {
-			return $this->belongsToMany('Acl\\Role', 'acl_group_roles', 'group_id', 'role_id');
+			return $this->belongsToMany('Signes\\Acl\\Model\\Role', 'acl_group_roles', 'group_id', 'role_id');
 		}
 	}

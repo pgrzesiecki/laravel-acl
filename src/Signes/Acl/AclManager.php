@@ -2,15 +2,8 @@
 
 	namespace Signes\Acl;
 
-	// Signes\Acl classes
-	use Acl\Role;
-	use Acl\Permission;
-	use Acl\Group;
-	use Acl\User;
-
-	// Laravel classes
-	use Illuminate\Support\Facades\Auth;
-	use Illuminate\Support\Facades\Config;
+	// Repository class
+	use Signes\Acl\Repository\AclRepository;
 
 	abstract class AclManager {
 
@@ -24,36 +17,10 @@
 		private $_current_user = null;
 
 		/**
-		 * Add new permission to database, and return it's id, or false if permission exists
-		 *
-		 * @param $area
-		 * @param $permission
-		 * @param array $actions
-		 * @param string $description
-		 * @return Permission|bool
+		 * @param AclRepository $repository
 		 */
-		public function addPermission($area, $permission, array $actions = null, $description = '') {
-
-			$area = (string) $area;
-			$permission = (string) $permission;
-			$description = (string) $description;
-
-			$permission_exists = Permission::where('area', '=', $area)->where('permission', '=', $permission)->first();
-
-			if(!$permission_exists) {
-
-				$new_permission = new Permission();
-				$new_permission->area = $area;
-				$new_permission->permission = $permission;
-				$new_permission->actions = ($actions !== null) ? serialize($actions) : null;
-				$new_permission->description = $description;
-				$new_permission->save();
-
-				return $new_permission;
-
-			}
-
-			return false;
+		public function __construct(AclRepository $repository) {
+			$this->repository = $repository;
 		}
 
 		/**
@@ -69,9 +36,9 @@
 			 * take Guest account.
 			 */
 			if(!$this->_current_user) {
-				$user = \Auth::user();
+				$user = $this->repository->getAuth();
 				if(!$user) {
-					$user = User::find(1);
+					$user = $this->repository->getGuest();
 				}
 
 				// Set user to current instance
@@ -83,8 +50,8 @@
 			 * if we have required information's in cache.
 			 */
 			$user_cache_key = 'acl:user:' . $this->_current_user->id;
-			if(\Cache::has($user_cache_key)) {
-				return \Cache::get($user_cache_key);
+			if($this->repository->cacheHas($user_cache_key)) {
+				return $this->repository->cacheGet($user_cache_key);
 			}
 
 			/**
@@ -95,7 +62,7 @@
 			/**
 			 * Storage permission map in cache to save time and decrease number of DB queries.
 			 */
-			\Cache::put($user_cache_key, $permissions_array, \Config::get('signes-acl::acl.cache_time'));
+			$this->repository->cachePut($user_cache_key, $permissions_array);
 
 			return $permissions_array;
 
@@ -105,10 +72,10 @@
 		 * Get permission set for user.
 		 * Included personal access, groups and roles.
 		 *
-		 * @param User $user
+		 * @param UserInterface $user
 		 * @return array
 		 */
-		public function collectUserPermissions(User $user) {
+		public function collectUserPermissions(UserInterface $user) {
 
 			$permission_set = array();
 
@@ -138,10 +105,10 @@
 		/**
 		 * Collect permissions for group
 		 *
-		 * @param Group $group
+		 * @param GroupInterface $group
 		 * @param array $permission_set
 		 */
-		public function collectGroupPermissions(Group $group, array &$permission_set = array()) {
+		public function collectGroupPermissions(GroupInterface $group, array &$permission_set = array()) {
 
 			/**
 			 * Group may have many permissions, iterate through all of them.
@@ -161,10 +128,10 @@
 		/**
 		 * Collect permissions for role
 		 *
-		 * @param Role $role
+		 * @param RoleInterface $role
 		 * @param array $permission_set
 		 */
-		public function collectRolePermission(Role $role, array &$permission_set = array()) {
+		public function collectRolePermission(RoleInterface $role, array &$permission_set = array()) {
 
 			/**
 			 * Roles might contain very special filters
@@ -186,10 +153,10 @@
 		 * D - Deny, this filter deny access to ANY resource (something like banned)
 		 * A - Allow, this filter allow access to ANY resource (somethings like root)
 		 *
-		 * @param Role $role
+		 * @param RoleInterface $role
 		 * @param array $permission_set
 		 */
-		private function _parseSpecialRoles(Role $role, array &$permission_set = array()) {
+		private function _parseSpecialRoles(RoleInterface $role, array &$permission_set = array()) {
 
 			switch($role->filter) {
 				case 'D':
@@ -206,11 +173,11 @@
 		 * Populate permission set.
 		 * Here we build part of permissions set.
 		 *
-		 * @param Permission $permission
+		 * @param PermissionInterface $permission
 		 * @param array $permission_set
 		 * @param bool $removed_populate
 		 */
-		private function _parsePermissions(Permission $permission, array &$permission_set, $removed_populate = false) {
+		private function _parsePermissions(PermissionInterface $permission, array &$permission_set, $removed_populate = false) {
 
 			$permission_actions = (isset($permission->actions)) ? unserialize($permission->actions) : array();
 			$granted_actions = (isset($permission->pivot->actions)) ? unserialize($permission->pivot->actions) : array();
@@ -245,7 +212,7 @@
 			$actions = (isset($data[1])) ? $data[1] : null;
 
 			// Wrong resource data? No access
-			if(!$area_permission || count($data) !== 2) {
+			if(!$area_permission) {
 				return array(
 					'area'       => null,
 					'permission' => null,
@@ -305,6 +272,7 @@
 			 * If we request "actions" in resource, go through all requested actions and check
 			 * if we have access to all of this actions in requested area and permission name,
 			 * or if action was not blocked.
+			 *
 			 * @see https://github.com/signes-pl/laravel-acl
 			 */
 			if(is_array($resource_map['actions'])) {

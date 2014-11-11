@@ -2,6 +2,7 @@
 	namespace Signes\Acl;
 
 	use Illuminate\Support\ServiceProvider;
+	use Signes\Acl\Repository\SignesAclRepository;
 
 	class AclServiceProvider extends ServiceProvider {
 
@@ -29,7 +30,7 @@
 		public function register() {
 
 			$this->app->bind('acl', function () {
-				return new Acl;
+				return new Acl(new SignesAclRepository());
 			});
 
 		}

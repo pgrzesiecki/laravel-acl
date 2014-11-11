@@ -1,13 +1,15 @@
 <?php
 
-	namespace Acl;
+	namespace Signes\Acl\Model;
 
 	use Illuminate\Auth\UserTrait;
 	use Illuminate\Auth\UserInterface;
 	use Illuminate\Auth\Reminders\RemindableTrait;
 	use Illuminate\Auth\Reminders\RemindableInterface;
 
-	class User extends \Eloquent implements UserInterface, RemindableInterface {
+	use Signes\Acl\UserInterface as SignesAclUserInterface;
+
+	class User extends \Eloquent implements SignesAclUserInterface, UserInterface, RemindableInterface {
 
 		use UserTrait, RemindableTrait;
 
@@ -31,7 +33,7 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 		 */
 		public function getPermissions() {
-			return $this->belongsToMany('Acl\\Permission', 'acl_user_permissions', 'user_id', 'permission_id')->withPivot('actions');
+			return $this->belongsToMany('Signes\\Acl\\Model\\Permission', 'acl_user_permissions', 'user_id', 'permission_id')->withPivot('actions');
 		}
 
 		/**
@@ -40,7 +42,7 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 		 */
 		public function getRoles() {
-			return $this->belongsToMany('Acl\\Role', 'acl_user_roles', 'user_id', 'role_id');
+			return $this->belongsToMany('Signes\\Acl\\Model\\Role', 'acl_user_roles', 'user_id', 'role_id');
 		}
 
 		/**
@@ -49,6 +51,6 @@
 		 * @return \Illuminate\Database\Eloquent\Relations\HasOne
 		 */
 		public function getGroup() {
-			return $this->hasOne('Acl\\Group', 'id', 'group_id');
+			return $this->hasOne('Signes\\Acl\\Model\\Group', 'id', 'group_id');
 		}
 	}
