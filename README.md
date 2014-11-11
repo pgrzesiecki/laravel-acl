@@ -47,7 +47,7 @@ soon
 );
 ```
 
-* Migrate database schemas:
+* Migrate database schema:
 ```
 php artisan --package="signes/acl"
 ```
@@ -64,20 +64,20 @@ As a result we got `true` or `false`.
 
 If we requested few actions, we get `true` result only when User has access to every of this actions.
 
-***Special filters***
+####Special filters####
 Roles may contain special filters like:
 * `A` - allow access to everything
 * `D` - deny access to everything
 * `R` - revoke access to resource
 
 ####Available methods####
-**Acl::isAllow($resource)** 
+#####Acl::isAllow($resource)#####
 Check if current user have access to `$resource`.
 
-**Acl::createPermission($area, $permission, array $actions = null, $description = '')** 
+#####Acl::createPermission($area, $permission, array $actions = null, $description = '')#####
 Create new permission. `$actions` may contain string or array of accesses.
 
-**Acl::deletePermission($area, $permission = null, $actions = null)**
+#####Acl::deletePermission($area, $permission = null, $actions = null)#####
 Delete existing permission. You can delete whole `zone`, `zone.permission`, or single actions in `zone.permission` set 
 
 ... more soon
