@@ -1,0 +1,23 @@
+{
+    "name": "signes/acl",
+    "description": "Advanced ACL for Laravel",
+    "keywords": ["laravel", "acl", "groups", "roles"],
+    "homepage": "https://github.com/signes-pl/laravel-acl",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Grzesiecki",
+            "email": "pawel.grzesiecki@signes.pl"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "illuminate/support": "4.2.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Signes\\Acl\\": "src/Signes/Acl/"
+        }
+    },
+    "minimum-stability": "stable"
+}
