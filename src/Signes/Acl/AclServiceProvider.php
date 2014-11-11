@@ -18,7 +18,7 @@
 		 * @return void
 		 */
 		public function boot() {
-			$this->package('signes/acl');
+			$this->package('signes/acl', 'signes-acl');
 		}
 
 		/**

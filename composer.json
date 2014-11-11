@@ -1,7 +1,12 @@
 {
     "name": "signes/acl",
     "description": "Advanced ACL for Laravel",
-    "keywords": ["laravel", "acl", "groups", "roles"],
+    "keywords": [
+        "laravel",
+        "acl",
+        "groups",
+        "roles"
+    ],
     "homepage": "https://github.com/signes-pl/laravel-acl",
     "license": "MIT",
     "authors": [
@@ -17,7 +22,11 @@
     "autoload": {
         "psr-4": {
             "Signes\\Acl\\": "src/Signes/Acl/"
-        }
+        },
+        "classmap": [
+            "src/models",
+            "src/migrations"
+        ]
     },
     "minimum-stability": "stable"
 }
