@@ -11,49 +11,12 @@
 	class SignesAclRepository implements AclRepository {
 
 		/**
-		 * Get user object from Laravel Auth mechanism
-		 *
-		 * @return mixed
-		 */
-		public function getAuth() {
-			return Auth::user();
-		}
-
-		/**
 		 * Get Guest object
 		 *
 		 * @return mixed
 		 */
 		public function getGuest() {
 			return User::find(1);
-		}
-
-		/**
-		 * @param $cacheKey
-		 * @return mixed
-		 */
-		public function cacheHas($cacheKey) {
-			return Cache::has($cacheKey);
-		}
-
-		/**
-		 * Get cache value based on key
-		 *
-		 * @param $cacheKey
-		 * @return mixed
-		 */
-		public function cacheGet($cacheKey) {
-			return Cache::get($cacheKey);
-		}
-
-		/**
-		 * Put cache data.
-		 *
-		 * @param $cacheKey
-		 * @param $cacheValue
-		 */
-		public function cachePut($cacheKey, $cacheValue) {
-			\Cache::put($cacheKey, $cacheValue, Config::get('signes-acl::acl.cache_time'));
 		}
 
 		/**

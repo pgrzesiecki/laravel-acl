@@ -8,11 +8,12 @@
 		 * Check if resource is available
 		 *
 		 * @param $resource
+		 * @param UserInterface $user
 		 * @return bool
 		 */
-		public function isAllow($resource) {
+		public function isAllow($resource, UserInterface $user = null) {
 			$resource_map = $this->__prepareResource($resource);
-			$permissions = $this->collectPermissions();
+			$permissions = $this->collectPermissions($user);
 			return $this->__compareResourceWithPermissions($resource_map, $permissions);
 		}
 

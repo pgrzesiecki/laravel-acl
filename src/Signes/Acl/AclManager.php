@@ -24,25 +24,31 @@
 		}
 
 		/**
+		 * Set user to checks
+		 *
+		 * @param UserInterface $user
+		 */
+		public function setUser(UserInterface $user) {
+			$this->_current_user = $user;
+		}
+
+		/**
 		 * Collect permissions for current logged in user.
 		 *
+		 * @param UserInterface $user
 		 * @return array
 		 */
-		public function collectPermissions() {
+		public function collectPermissions(UserInterface $user = null) {
 
 			/**
 			 * If there is no user in local instance,
 			 * take user from \Auth library. If it will fail,
 			 * take Guest account.
 			 */
-			if(!$this->_current_user) {
-				$user = $this->repository->getAuth();
-				if(!$user) {
-					$user = $this->repository->getGuest();
-				}
-
-				// Set user to current instance
-				$this->_current_user = $user;
+			if($user) {
+				$this->setUser($user);
+			} elseif(!$this->_current_user && !$user) {
+				$this->setUser($this->repository->getGuest());
 			}
 
 			/**
@@ -50,10 +56,10 @@
 			 * if we have required information's in cache.
 			 */
 			$user_cache_key = 'acl:user:' . $this->_current_user->id;
-			if($this->repository->cacheHas($user_cache_key)) {
-				return $this->repository->cacheGet($user_cache_key);
+			if(\Cache::has($user_cache_key)) {
+				return \Cache::get($user_cache_key);
 			}
-
+			
 			/**
 			 * Collect all user permissions based on their personal access, groups and roles
 			 */
@@ -62,7 +68,7 @@
 			/**
 			 * Storage permission map in cache to save time and decrease number of DB queries.
 			 */
-			$this->repository->cachePut($user_cache_key, $permissions_array);
+			\Cache::put($user_cache_key, $permissions_array, \Config::get('signes-acl::acl.cache_time'));
 
 			return $permissions_array;
 
@@ -75,7 +81,8 @@
 		 * @param UserInterface $user
 		 * @return array
 		 */
-		public function collectUserPermissions(UserInterface $user) {
+		public
+		function collectUserPermissions(UserInterface $user) {
 
 			$permission_set = array();
 
@@ -108,7 +115,8 @@
 		 * @param GroupInterface $group
 		 * @param array $permission_set
 		 */
-		public function collectGroupPermissions(GroupInterface $group, array &$permission_set = array()) {
+		public
+		function collectGroupPermissions(GroupInterface $group, array &$permission_set = array()) {
 
 			/**
 			 * Group may have many permissions, iterate through all of them.
@@ -131,7 +139,8 @@
 		 * @param RoleInterface $role
 		 * @param array $permission_set
 		 */
-		public function collectRolePermission(RoleInterface $role, array &$permission_set = array()) {
+		public
+		function collectRolePermission(RoleInterface $role, array &$permission_set = array()) {
 
 			/**
 			 * Roles might contain very special filters
@@ -156,7 +165,8 @@
 		 * @param RoleInterface $role
 		 * @param array $permission_set
 		 */
-		private function _parseSpecialRoles(RoleInterface $role, array &$permission_set = array()) {
+		private
+		function _parseSpecialRoles(RoleInterface $role, array &$permission_set = array()) {
 
 			switch($role->filter) {
 				case 'D':
@@ -177,7 +187,8 @@
 		 * @param array $permission_set
 		 * @param bool $removed_populate
 		 */
-		private function _parsePermissions(PermissionInterface $permission, array &$permission_set, $removed_populate = false) {
+		private
+		function _parsePermissions(PermissionInterface $permission, array &$permission_set, $removed_populate = false) {
 
 			$permission_actions = (isset($permission->actions)) ? unserialize($permission->actions) : array();
 			$granted_actions = (isset($permission->pivot->actions)) ? unserialize($permission->pivot->actions) : array();
@@ -205,7 +216,8 @@
 		 * @param $resource
 		 * @return array
 		 */
-		protected function __prepareResource($resource) {
+		protected
+		function __prepareResource($resource) {
 
 			$data = explode('|', $resource);
 			$area_permission = (isset($data[0])) ? $data[0] : null;
@@ -246,7 +258,8 @@
 		 * @param array $permissions
 		 * @return bool
 		 */
-		protected function __compareResourceWithPermissions(array $resource_map, array $permissions) {
+		protected
+		function __compareResourceWithPermissions(array $resource_map, array $permissions) {
 
 			/**
 			 * Check if user have root access (user is member of role with special filter)
