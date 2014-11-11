@@ -26,8 +26,8 @@ You gain powerful mechanism for managing access levels, which include:
 
 ##Installation##
 * Add this package as required in composer:
-```php
-soon
+```
+"signes/acl": "dev-master"
 ```
 
 
