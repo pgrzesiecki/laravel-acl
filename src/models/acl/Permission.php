@@ -1,19 +1,21 @@
 <?php
 
-	namespace Signes\Acl\Model;
+namespace Signes\Acl\Model;
 
-	use Signes\Acl\PermissionInterface;
+use Signes\Acl\PermissionInterface;
 
-	class Permission extends \Eloquent implements PermissionInterface {
+class Permission extends \Eloquent implements PermissionInterface
+{
 
-		/**
-		 * The database table used by the model.
-		 *
-		 * @var string
-		 */
-		protected $table = 'acl_permissions';
+    /**
+     * The database table used by the model.
+     *
+     * @var string
+     */
+    protected $table = 'acl_permissions';
 
-		public function getAreaPermission($area, $permission) {
+    public function getAreaPermission($area, $permission)
+    {
 
-		}
-	}
+    }
+}

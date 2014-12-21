@@ -5,7 +5,6 @@ With this package, you will be able detailed control access to any resource on y
 This mechanism is inspired by the amazing [OrmAuth](http://fuelphp.com/docs/packages/auth/ormauth/intro.html#/acl) solution used in the framework FuelPHP.
 
 You gain powerful mechanism for managing access levels, which include:
-* Login and authenticate user, using native Laravel [Auth](http://laravel.com/docs/4.2/security#authenticating-users) mechanism,
 * Every User may have one Group,
 * Every User may have many Roles,
 * Every User may have many Permissions,
@@ -49,11 +48,11 @@ You gain powerful mechanism for managing access levels, which include:
 
 * Migrate database schema:
 ```
-php artisan --package="signes/acl"
+php artisan migrate --package="signes/acl"
 ```
 
 ##Usage##
-You can check whether the user has permissions to the resource. This is done with the `Acl::isAllow($resource)`. For the currently logged in user we check his access to the resource defined in the variable `$resource`.
+You can check whether the user has permissions to the resource. This is done with the `\Acl::isAllow($resource, UserInterface $user = null)`. For the currently logged in user we check his access to the resource defined in the variable `$resource`.
 We can describe resource on few ways:
 ```php
 $resource_A = "zoneA.permissionA|actionA1.actionA2"
@@ -64,6 +63,8 @@ As a result we got `true` or `false`.
 
 If we requested few actions, we get `true` result only when User has access to every of this actions.
 
+You can pass `$user` to every `\Acl::isAllowed()` method, or set User only once in Acl using `\Acl::setUser(UserInterface $user)`.
+
 ####Special filters####
 Roles may contain special filters like:
 * `A` - allow access to everything
@@ -71,22 +72,33 @@ Roles may contain special filters like:
 * `R` - revoke access to resource
 
 ####Available methods####
-#####Acl::isAllow($resource)#####
+#####\Acl::isAllow($resource)#####
 Check if current user have access to `$resource`.
 
-#####Acl::createPermission($area, $permission, array $actions = null, $description = '')#####
+#####\Acl::createPermission($area, $permission, array $actions = null, $description = '')#####
 Create new permission. `$actions` may contain string or array of accesses.
 
-#####Acl::deletePermission($area, $permission = null, $actions = null)#####
+#####\Acl::deletePermission($area, $permission = null, $actions = null)#####
 Delete existing permission. You can delete whole `zone`, `zone.permission`, or single actions in `zone.permission` set 
 
 ... more soon
 
-##Create own providers##
-By default `Signes\Acl` give you ready models and required methods to work. But sometimes you may want to integrate ACL with your own, existing `User` objects.
-You can design your own providers, remember only to implement required interfaces(UserInterface, GroupInterface, PermissionInterface, RoleInterface).
+##User object##
+Most important object in ACL is User representation, which is provided by `\Signes\Acl\Model\User` object.
+For more information's you can check `src/models/acl/User.php` file.
 
-`Signes\Acl` used own Provider to get data. You can check code in `Signes/Acl/Repository/SignesAclRepository.php` file. 
+Of course you can create your own User object, just remember to extend your class by `\Signes\Acl\Model\User`.
+
+Available methods on User object:
+* `$user->getGroup`
+* `$user->getRoles`
+* `$user->getPermissions`
+
+##Create own providers##
+By default `\Signes\Acl` give you ready models and required methods to work. But sometimes you may want to integrate ACL with your own, existing `User` objects.
+You can design your own providers, remember only to implement required interfaces (UserInterface, GroupInterface, PermissionInterface, RoleInterface).
+
+`\Signes\Acl` used own Provider to get data. You can check code in `Signes/Acl/Repository/SignesAclRepository.php` file. 
 
 ##Credits##
 * Pawel Grzesiecki - Developer ([http://signes.pl/](http://signes.pl/))

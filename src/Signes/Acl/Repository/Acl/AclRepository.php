@@ -1,20 +1,37 @@
 <?php
 
-	namespace Signes\Acl\Repository;
+namespace Signes\Acl\Repository;
 
-	interface AclRepository {
+use Signes\Acl\GroupInterface;
+use Signes\Acl\PermissionInterface;
+use Signes\Acl\RoleInterface;
+use Signes\Acl\UserInterface;
 
-		public function getAuth();
+interface AclRepository
+{
+    public function getGuest();
 
-		public function getGuest();
+    public function createPermission($area, $permission, $actions = null, $description = '');
 
-		public function cacheHas($cacheKey);
+    public function deletePermission($area, $permission = null, $actions = null);
 
-		public function cacheGet($cacheKey);
+    public function grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = array());
 
-		public function cachePut($cacheKey, $cacheValue);
+    public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
 
-		public function createPermission($area, $permission, $actions = null, $description = '');
+    public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array());
 
-		public function deletePermission($area, $permission = null, $actions = null);
-	}
+    public function grantUserRole(RoleInterface $role, UserInterface $user);
+
+    public function grantGroupRole(RoleInterface $role, GroupInterface $group);
+
+    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group);
+
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user);
+
+    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role);
+
+    public function revokeUserRole(RoleInterface $role, UserInterface $user);
+
+    public function revokeGroupRole(RoleInterface $role, GroupInterface $group);
+}

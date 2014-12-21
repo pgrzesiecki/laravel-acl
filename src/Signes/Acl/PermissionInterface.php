@@ -1,9 +1,9 @@
 <?php
 
-	namespace Signes\Acl;
+namespace Signes\Acl;
 
-	interface PermissionInterface {
+interface PermissionInterface
+{
 
-		public function getAreaPermission($area, $permission);
-
-	}
+    public function getAreaPermission($area, $permission);
+}

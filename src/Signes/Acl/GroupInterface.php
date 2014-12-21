@@ -1,11 +1,11 @@
 <?php
 
-	namespace Signes\Acl;
+namespace Signes\Acl;
 
-	interface GroupInterface {
+interface GroupInterface
+{
 
-		public function getPermissions();
+    public function getPermissions();
 
-		public function getRoles();
-
-	}
+    public function getRoles();
+}
