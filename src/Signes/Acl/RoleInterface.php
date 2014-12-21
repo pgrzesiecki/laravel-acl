@@ -1,9 +1,9 @@
 <?php
 
-	namespace Signes\Acl;
+namespace Signes\Acl;
 
-	interface RoleInterface {
+interface RoleInterface
+{
 
-		public function getPermissions();
-
-	}
+    public function getPermissions();
+}

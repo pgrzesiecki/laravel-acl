@@ -1,12 +1,20 @@
 <?php
 
-	namespace Signes\Acl\Repository;
+namespace Signes\Acl\Repository;
 
-	interface AclRepository {
+use Signes\Acl\PermissionInterface;
+use Signes\Acl\UserInterface;
 
-		public function getGuest();
+interface AclRepository
+{
 
-		public function createPermission($area, $permission, $actions = null, $description = '');
+    public function getGuest();
 
-		public function deletePermission($area, $permission = null, $actions = null);
-	}
+    public function createPermission($area, $permission, $actions = null, $description = '');
+
+    public function deletePermission($area, $permission = null, $actions = null);
+
+    public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
+
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
+}
