@@ -13,7 +13,7 @@ abstract class AclManager
      * Used when we want to check access many times in one request.
      * In this case we ask DB only once.
      *
-     * @var null
+     * @var null|UserInterface
      */
     private $current_user = null;
 
@@ -191,9 +191,11 @@ abstract class AclManager
      * @param array $permission_set
      * @param bool $removed_populate
      */
-    private function parsePermissions(PermissionInterface $permission, array &$permission_set, $removed_populate = false)
-    {
-
+    private function parsePermissions(
+        PermissionInterface $permission,
+        array &$permission_set,
+        $removed_populate = false
+    ) {
         $permission_actions = (array) ((isset($permission->actions)) ?
             unserialize($permission->actions) : array());
         $granted_actions = (array) ((isset($permission->pivot->actions)) ?

@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Signes\Acl\Exception\DuplicateEntry;
-use Signes\Acl\Model\Permission;
-use Signes\Acl\Model\User;
+use Signes\Acl\GroupInterface;
 use Signes\Acl\PermissionInterface;
 use Signes\Acl\UserInterface;
+use Signes\Acl\Model\Permission;
+use Signes\Acl\Model\User;
 
 class SignesAclRepository implements AclRepository
 {
@@ -123,13 +124,44 @@ class SignesAclRepository implements AclRepository
     }
 
     /**
+     * Revoke user permission
+     *
      * @param PermissionInterface $permission
      * @param UserInterface $user
-     * @param array|bool $actions , actions array or true, if true all actions will be revoked
      * @return bool
      */
     public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
     {
         return $user->getPermissions()->detach($permission->getAttribute('id'));
+    }
+
+    /**
+     *  Grant new permissions for group
+     *
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @param array $actions , actions array or true, if true all actions will be granted
+     * @throws DuplicateEntry
+     */
+    public function grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = array())
+    {
+        try {
+            $actions = ($actions === true) ? $permission->getAttribute('actions') : serialize($actions);
+            $group->getPermissions()->save($permission, array('actions' => $actions));
+        } catch (\Exception $e) {
+            throw new DuplicateEntry($e->getMessage());
+        }
+    }
+
+    /**
+     * Revoke group permissions
+     *
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @return bool
+     */
+    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
+    {
+        return $group->getPermissions()->detach($permission->getAttribute('id'));
     }
 }

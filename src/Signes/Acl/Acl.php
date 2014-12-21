@@ -16,7 +16,6 @@ class Acl extends AclManager
     {
         $resource_map = $this->__prepareResource($resource);
         $permissions = $this->collectPermissions($user);
-        var_dump($resource_map, $permissions);
         return $this->__compareResourceWithPermissions($resource_map, $permissions);
     }
 
@@ -84,11 +83,44 @@ class Acl extends AclManager
     /**
      * @param PermissionInterface $permission
      * @param UserInterface $user
-     * @param array $actions
      * @return mixed
      */
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array())
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
     {
-        return $this->repository->revokeUserPermission($permission, $user, $actions);
+        return $this->repository->revokeUserPermission($permission, $user);
+    }
+
+    /**
+     * Grant user permission to specific actions
+     *
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @param array $actions
+     * @param bool $overwrite , if false and user - permission relation exists,
+     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     * @return mixed
+     */
+    public function grantGroupPermission(
+        PermissionInterface $permission,
+        GroupInterface $group,
+        $actions = array(),
+        $overwrite = false
+    ) {
+
+        if ($overwrite) {
+            $this->revokeGroupPermission($permission, $group);
+        }
+
+        return $this->repository->grantGroupPermission($permission, $group, $actions);
+    }
+
+    /**
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @return mixed
+     */
+    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
+    {
+        return $this->repository->revokeGroupPermission($permission, $group);
     }
 }
