@@ -81,16 +81,6 @@ class Acl extends AclManager
     }
 
     /**
-     * @param PermissionInterface $permission
-     * @param UserInterface $user
-     * @return mixed
-     */
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
-    {
-        return $this->repository->revokeUserPermission($permission, $user);
-    }
-
-    /**
      * Grant group permission to specific actions
      *
      * @param PermissionInterface $permission
@@ -112,16 +102,6 @@ class Acl extends AclManager
         }
 
         return $this->repository->grantGroupPermission($permission, $group, $actions);
-    }
-
-    /**
-     * @param PermissionInterface $permission
-     * @param GroupInterface $group
-     * @return mixed
-     */
-    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
-    {
-        return $this->repository->revokeGroupPermission($permission, $group);
     }
 
     /**
@@ -149,6 +129,64 @@ class Acl extends AclManager
     }
 
     /**
+     * Grant user permission to specific actions
+     *
+     * @param RoleInterface $role
+     * @param UserInterface $user
+     * @param bool $overwrite , if false and user - permission relation exists,
+     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     * @return mixed
+     */
+    public function grantUserRole(RoleInterface $role, UserInterface $user, $overwrite = false)
+    {
+
+        if ($overwrite) {
+            $this->revokeUserRole($role, $user);
+        }
+
+        return $this->repository->grantUserRole($role, $user);
+    }
+
+    /**
+     * Grant user permission to specific actions
+     *
+     * @param RoleInterface $role
+     * @param GroupInterface $group
+     * @param bool $overwrite , if false and user - permission relation exists,
+     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     * @return mixed
+     */
+    public function grantGroupRole(RoleInterface $role, GroupInterface $group, $overwrite = false)
+    {
+
+        if ($overwrite) {
+            $this->revokeGroupRole($role, $group);
+        }
+
+        return $this->repository->grantGroupRole($role, $group);
+    }
+
+    /**
+     * @param PermissionInterface $permission
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
+    {
+        return $this->repository->revokeUserPermission($permission, $user);
+    }
+
+    /**
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @return mixed
+     */
+    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
+    {
+        return $this->repository->revokeGroupPermission($permission, $group);
+    }
+
+    /**
      * @param PermissionInterface $permission
      * @param RoleInterface $role
      * @return mixed
@@ -156,5 +194,25 @@ class Acl extends AclManager
     public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
     {
         return $this->repository->revokeRolePermission($permission, $role);
+    }
+
+    /**
+     * @param RoleInterface $role
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function revokeUserRole(RoleInterface $role, UserInterface $user)
+    {
+        return $this->repository->revokeUserRole($role, $user);
+    }
+
+    /**
+     * @param RoleInterface $role
+     * @param GroupInterface $group
+     * @return mixed
+     */
+    public function revokeGroupRole(RoleInterface $role, GroupInterface $group)
+    {
+        return $this->repository->revokeGroupRole($role, $group);
     }
 }

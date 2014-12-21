@@ -159,8 +159,40 @@ class SignesAclRepository implements AclRepository
         } catch (\Exception $e) {
             throw new DuplicateEntry($e->getMessage());
         }
-
     }
+
+    /**
+     *  Grant new role for user
+     *
+     * @param RoleInterface $role
+     * @param UserInterface $user
+     * @throws DuplicateEntry
+     */
+    public function grantUserRole(RoleInterface $role, UserInterface $user)
+    {
+        try {
+            $user->getRoles()->save($role);
+        } catch (\Exception $e) {
+            throw new DuplicateEntry($e->getMessage());
+        }
+    }
+
+    /**
+     * Grant new role for group
+     *
+     * @param RoleInterface $role
+     * @param GroupInterface $group
+     * @throws DuplicateEntry
+     */
+    public function grantGroupRole(RoleInterface $role, GroupInterface $group)
+    {
+        try {
+            $group->getRoles()->save($role);
+        } catch (\Exception $e) {
+            throw new DuplicateEntry($e->getMessage());
+        }
+    }
+
 
     /**
      * Revoke user permission
@@ -197,4 +229,28 @@ class SignesAclRepository implements AclRepository
     {
         return $role->getPermissions()->detach($permission->getAttribute('id'));
     }
+
+    /**
+     * Revoke User Role
+     *
+     * @param RoleInterface $role
+     * @param UserInterface $user
+     */
+    public function revokeUserRole(RoleInterface $role, UserInterface $user)
+    {
+        return $user->getRoles()->detach($role->getAttribute('id'));
+    }
+
+    /**
+     * Revoke Group Role
+     *
+     * @param RoleInterface $role
+     * @param GroupInterface $group
+     */
+    public function revokeGroupRole(RoleInterface $role, GroupInterface $group)
+    {
+        return $group->getRoles()->detach($role->getAttribute('id'));
+    }
+
+
 }
