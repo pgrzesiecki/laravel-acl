@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Config;
 use Signes\Acl\Exception\DuplicateEntry;
 use Signes\Acl\GroupInterface;
 use Signes\Acl\PermissionInterface;
+use Signes\Acl\RoleInterface;
 use Signes\Acl\UserInterface;
 use Signes\Acl\Model\Permission;
 use Signes\Acl\Model\User;
@@ -124,18 +125,6 @@ class SignesAclRepository implements AclRepository
     }
 
     /**
-     * Revoke user permission
-     *
-     * @param PermissionInterface $permission
-     * @param UserInterface $user
-     * @return bool
-     */
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
-    {
-        return $user->getPermissions()->detach($permission->getAttribute('id'));
-    }
-
-    /**
      *  Grant new permissions for group
      *
      * @param PermissionInterface $permission
@@ -153,6 +142,38 @@ class SignesAclRepository implements AclRepository
         }
     }
 
+
+    /**
+     *  Grant new permissions for group
+     *
+     * @param PermissionInterface $permission
+     * @param RoleInterface $role
+     * @param array $actions , actions array or true, if true all actions will be granted
+     * @throws DuplicateEntry
+     */
+    public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array())
+    {
+        try {
+            $actions = ($actions === true) ? $permission->getAttribute('actions') : serialize($actions);
+            $role->getPermissions()->save($permission, array('actions' => $actions));
+        } catch (\Exception $e) {
+            throw new DuplicateEntry($e->getMessage());
+        }
+
+    }
+
+    /**
+     * Revoke user permission
+     *
+     * @param PermissionInterface $permission
+     * @param UserInterface $user
+     * @return bool
+     */
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
+    {
+        return $user->getPermissions()->detach($permission->getAttribute('id'));
+    }
+
     /**
      * Revoke group permissions
      *
@@ -163,5 +184,17 @@ class SignesAclRepository implements AclRepository
     public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
     {
         return $group->getPermissions()->detach($permission->getAttribute('id'));
+    }
+
+    /**
+     * Revoke role permissions
+     *
+     * @param PermissionInterface $permission
+     * @param RoleInterface $role
+     * @return bool
+     */
+    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
+    {
+        return $role->getPermissions()->detach($permission->getAttribute('id'));
     }
 }

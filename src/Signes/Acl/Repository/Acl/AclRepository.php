@@ -4,6 +4,7 @@ namespace Signes\Acl\Repository;
 
 use Signes\Acl\GroupInterface;
 use Signes\Acl\PermissionInterface;
+use Signes\Acl\RoleInterface;
 use Signes\Acl\UserInterface;
 
 interface AclRepository
@@ -22,4 +23,8 @@ interface AclRepository
     public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
 
     public function revokeUserPermission(PermissionInterface $permission, UserInterface $user);
+
+    public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array());
+
+    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role);
 }

@@ -91,7 +91,7 @@ class Acl extends AclManager
     }
 
     /**
-     * Grant user permission to specific actions
+     * Grant group permission to specific actions
      *
      * @param PermissionInterface $permission
      * @param GroupInterface $group
@@ -122,5 +122,39 @@ class Acl extends AclManager
     public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
     {
         return $this->repository->revokeGroupPermission($permission, $group);
+    }
+
+    /**
+     * Grant user permission to specific actions
+     *
+     * @param PermissionInterface $permission
+     * @param RoleInterface $role
+     * @param array $actions
+     * @param bool $overwrite , if false and user - permission relation exists,
+     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     * @return mixed
+     */
+    public function grantRolePermission(
+        PermissionInterface $permission,
+        RoleInterface $role,
+        $actions = array(),
+        $overwrite = false
+    ) {
+
+        if ($overwrite) {
+            $this->revokeRolePermission($permission, $role);
+        }
+
+        return $this->repository->grantRolePermission($permission, $role, $actions);
+    }
+
+    /**
+     * @param PermissionInterface $permission
+     * @param RoleInterface $role
+     * @return mixed
+     */
+    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
+    {
+        return $this->repository->revokeRolePermission($permission, $role);
     }
 }
