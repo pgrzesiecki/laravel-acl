@@ -63,7 +63,8 @@ class Acl extends AclManager
      * @param PermissionInterface $permission
      * @param UserInterface $user
      * @param array $actions
-     * @param bool $overwrite , if false and user - permission relation exists, will throw SQLSTATE[23000]
+     * @param bool $overwrite , if false and user - permission relation exists,
+     *                        will throw \Signes\Acl\Exception\DuplicateEntry
      * @return mixed
      */
     public function grantUserPermission(

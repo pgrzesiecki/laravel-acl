@@ -5,6 +5,7 @@ namespace Signes\Acl\Repository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Signes\Acl\Exception\DuplicateEntry;
 use Signes\Acl\Model\Permission;
 use Signes\Acl\Model\User;
 use Signes\Acl\PermissionInterface;
@@ -95,22 +96,21 @@ class SignesAclRepository implements AclRepository
     }
 
     /**
-     * Grant new permissions for user
+     *  Grant new permissions for user
      *
      * @param PermissionInterface $permission
      * @param UserInterface $user
      * @param array $actions , actions array or true, if true all actions will be granted
+     * @throws DuplicateEntry
      */
     public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array())
     {
-
         try {
             $actions = ($actions === true) ? serialize($permission->getAttribute('actions')) : serialize($actions);
             $user->getPermissions()->save($permission, array('actions' => $actions));
         } catch (\Exception $e) {
-            var_dump($e->getMessage(), $e->getPrevious());
+            throw new DuplicateEntry($e->getMessage());
         }
-
     }
 
     /**
