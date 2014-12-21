@@ -65,14 +65,23 @@ class SignesAclRepository implements AclRepository
     public function deletePermission($area, $permission = null, $actions = null)
     {
 
+        /**
+         * Delete area
+         */
         if ($permission === null && $actions === null) {
             return Permission::where('area', '=', $area)->delete();
         }
 
+        /**
+         * Delete area and zone
+         */
         if (is_string($permission) && $actions === null) {
             return Permission::where('area', '=', $area)->where('permission', '=', $permission)->delete();
         }
 
+        /**
+         * Keep row in database, but remove actions from array
+         */
         if (is_string($permission) && $actions !== null) {
             $actions = !is_array($actions) ? array($actions) : $actions;
             $permission = Permission::where('area', '=', $area)->where('permission', '=', $permission)->first();
@@ -116,23 +125,11 @@ class SignesAclRepository implements AclRepository
     /**
      * @param PermissionInterface $permission
      * @param UserInterface $user
-     * @param array $actions , actions array or true, if true all actions will be revoked
+     * @param array|bool $actions , actions array or true, if true all actions will be revoked
+     * @return bool
      */
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array())
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
     {
-
-        $user->getPermissions()->detach($permission->getAttribute('id'));
-
-        //			try {
-        //				$actions = ($actions === true) ? serialize($permission->getAttribute('actions')) : serialize($actions);
-        //				if($actions === true) {
-        //					$user->getPermissions()
-        //				} else {
-        //					$user->getPermissions()->updateExistingPivot($permission->getAttribute('id'), array('actions' => serialize(array('q'))));
-        //				}
-        //			} catch(\Exception $e){
-        //				var_dump($e->getMessage(), $e->getPrevious());
-        //			}
-
+        return $user->getPermissions()->detach($permission->getAttribute('id'));
     }
 }

@@ -16,5 +16,5 @@ interface AclRepository
 
     public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
 
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array());
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user);
 }
