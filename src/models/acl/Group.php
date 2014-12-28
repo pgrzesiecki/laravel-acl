@@ -6,6 +6,12 @@ use Signes\Acl\GroupInterface;
 
 class Group extends \Eloquent implements GroupInterface
 {
+    /**
+     * Mass fillable columns
+     *
+     * @var array
+     */
+    protected $fillable = array('name');
 
     /**
      * The database table used by the model.
