@@ -22,7 +22,7 @@ You gain powerful mechanism for managing access levels, which include:
 * Every permission may consists of `zone`, `permission` and many `actions`
 
 **Required:**
-* Laravel >= 4.2
+* Laravel ~4.2
 * PHP >= 5.4
 * Using database compatible with [Eloquent](http://laravel.com/docs/4.2/eloquent) and [Migration](http://laravel.com/docs/4.2/migrations) mechanism.
 
