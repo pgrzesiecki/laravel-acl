@@ -67,7 +67,7 @@ this command will copy files:
 
 * **Migrate database**
 ```
-php artisan migrat
+php artisan migrate
 ```
 
 ###Application name###
