@@ -1,5 +1,7 @@
 #Laravel ACL#
 
+###For Laravel 4, please use the [laravel5](https://github.com/signes-pl/laravel-acl/tree/laravel5) branch###
+
 * [Database schema](#database-schema)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -33,7 +35,7 @@ You gain powerful mechanism for managing access levels, which include:
 ##Installation##
 * Add this package as required in composer:
 ```
-"signes/acl": "dev-master"
+"signes/acl": "1.*"
 ```
 
 
