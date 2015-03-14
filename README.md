@@ -1,4 +1,6 @@
-#Laravel ACL#
+#Laravel 5 ACL#
+
+###For Laravel 4, please use the [laravel4](https://github.com/signes-pl/laravel-acl/tree/laravel4) branch###
 
 * [Database schema](#database-schema)
 * [Installation](#installation)
@@ -7,6 +9,8 @@
 * [User object](#user-object)
 * [Create own providers](#create-own-providers)
 * [Credits](#credits)
+
+
 
 With this package, you will be able detailed control access to any resource on your Laravel site.
 This mechanism is inspired by the amazing [OrmAuth](http://fuelphp.com/docs/packages/auth/ormauth/intro.html#/acl) solution used in the framework FuelPHP.
@@ -22,41 +26,55 @@ You gain powerful mechanism for managing access levels, which include:
 * Every permission may consists of `zone`, `permission` and many `actions`
 
 **Required:**
-* Laravel ~4.2
+* Laravel ~5.0
 * PHP >= 5.4
-* Using database compatible with [Eloquent](http://laravel.com/docs/4.2/eloquent) and [Migration](http://laravel.com/docs/4.2/migrations) mechanism.
+* Using database compatible with [Eloquent](http://laravel.com/docs/5.0/eloquent) and [Migration](http://laravel.com/docs/5.0/migrations) mechanism.
 
 
 ###Database schema###
 ![alt Laravel ACL Schema](https://cloud.githubusercontent.com/assets/5002331/4994391/dbe4772e-69b8-11e4-9562-514bccc90f22.png "Laravel ACL Schema")
 
 ##Installation##
-* Add this package as required in composer:
+* **Add this package as required in composer:**
 ```
-"signes/acl": "dev-master"
+"signes/acl": "2.*"
 ```
 
 
-* Add **Service Provider** and **Facade**. To do this, edit your `app.php` file and add:
+* **Add *Service Provider* and *Facade*. To do this, edit your `app.php` file and add:**
 ```php
-'providers' => array(
+'providers' => [
 	...
 	'Signes\Acl\AclServiceProvider',
 	...
-);
+];
 ```
 ```php
-'aliases' => array(
+'aliases' => [
 	...
 	'Acl' => 'Signes\Acl\Facades\Acl',
 	...
-);
+];
 ```
 
-* Migrate database schema:
+* **Move migrations and models to your project:**
 ```
-php artisan migrate --package="signes/acl"
+php artisan vendor:publish --provider="Signes\Acl\AclServiceProvider"
 ```
+this command will copy files: 
+* `vendor/signes/acl/src/Acl/Publish/Migrations` -> `database/migrations`
+* `vendor/signes/acl/src/Acl/Publish/Models` -> `app/Models`
+
+* **Migrate database**
+```
+php artisan migrat
+```
+
+###Application name###
+In Laravel 5 you can set your [own application name](http://laravel.com/docs/5.0/configuration#after-installation). If you did this and default `namespace` is not "**App**", you have to change namespaces in new models manually. Remember also to update `$namespace` variable in this models to get correct relations.
+
+Also you have to get ACL know which namespace you use. You can do this by `\Acl::setSiteNamespace('MyNamespace');`.
+
 
 ##Usage##
 You can check whether the user has permissions to the resource. This is done with the `\Acl::isAllow($resource, UserInterface $user = null)`. For the currently logged in user we check his access to the resource defined in the variable `$resource`.
@@ -81,45 +99,48 @@ Roles may contain special filters like:
 and you can set it using `$role->setFilter($filter)`.
 
 ####Available methods####
-#####Acl::isAllow($resource)#####
+#####\Acl::setSiteNamespace($namespace)#####
+Set new namespace for models. Required when you change site name.
+
+#####\Acl::isAllow($resource)#####
 Check if current user have access to `$resource`.
 
-#####Acl::createPermission($area, $permission, array $actions = null, $description = '')#####
+#####\Acl::createPermission($area, $permission, array $actions = null, $description = '')#####
 Create new permission. `$actions` may contain string or array of accesses.
 
-#####Acl::deletePermission($area, $permission = null, $actions = null)#####
+#####\Acl::deletePermission($area, $permission = null, $actions = null)#####
 Delete existing permission. You can delete whole `zone`, `zone.permission`, or single actions in `zone.permission` set 
 
-#####Acl::grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array(), $overwrite = false)#####
+#####\Acl::grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array(), $overwrite = false)#####
 Grand permissions with actions to User. If `$action` is empty array, there will be no access to any of action (eg. `zone.permission|action`). Only to global permission (like `zone.permission`). If `$action` is true, all permission access will be granted.
 Using `$overwrite` attribute you can decide to overwrite existing user - permission relation. By default there will be Exception if this relation exists and you trying to set it once again.
 
-#####Acl::grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = array())#####
-Working similar to `Acl::grantUserPermission`.
+#####\Acl::grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = array())#####
+Working similar to `\Acl::grantUserPermission`.
 
-#####Acl::grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array())#####
-Working similar to `Acl::grantUserPermission`.
+#####\Acl::grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array())#####
+Working similar to `\Acl::grantUserPermission`.
 
-#####Acl::revokeUserPermission(PermissionInterface $permission, UserInterface $user)#####
+#####\Acl::revokeUserPermission(PermissionInterface $permission, UserInterface $user)#####
 User will lost access to Permission. Relation will be removed. It works only with User object, not with other ways to have permission (eg. Group or Role).
 If you want to revoke access for specific User, but do not want to impact Permissions for other Users, you should think about special Role with `R` filter.
 
-#####Acl::revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)#####
+#####\Acl::revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)#####
 Group will lost access to Permission.
 
-#####Acl::revokeRolePermission(PermissionInterface $permission, RoleInterface $role)#####
+#####\Acl::revokeRolePermission(PermissionInterface $permission, RoleInterface $role)#####
 Role will lost access to Permission.
 
-#####Acl::grantUserRole(RoleInterface $role, UserInterface $user)#####
+#####\Acl::grantUserRole(RoleInterface $role, UserInterface $user)#####
 Connect User with Role and give all permissions connected with this Role.
 
-#####Acl::grantGroupRole(RoleInterface $role, GroupInterface $group)#####
+#####\Acl::grantGroupRole(RoleInterface $role, GroupInterface $group)#####
 Connect User with Group and give all permissions connected with this Group.
     
 #####Acl::revokeUserRole(RoleInterface $role, UserInterface $user)#####
 Disconnect User with Role and revoke all permissions connected with this Role.
     
-#####Acl::revokeGroupRole(RoleInterface $role, GroupInterface $group)#####
+#####\Acl::revokeGroupRole(RoleInterface $role, GroupInterface $group)#####
 Disconnect User with Group and revoke all permissions connected with this Group.
     
 ##Advanced example##
@@ -141,7 +162,7 @@ and here is code how to reach this:
     /**
      * Create and Save example Group
      */
-    $group = new \Signes\Acl\Model\Group(array(
+    $group = new \App\Models\Acl\Group(array(
         'name' => 'MyGroup1'
     ));
     $group->save();
@@ -149,13 +170,13 @@ and here is code how to reach this:
     /**
      * Create and save example Roles
      */
-    $role1 = new \Signes\Acl\Model\Role(array(
+    $role1 = new \App\Models\Acl\Role(array(
         'name' => 'My Role 1'
     ));
-    $role2 = new \Signes\Acl\Model\Role(array(
+    $role2 = new \App\Models\Acl\Role(array(
         'name' => 'My Role 2'
     ));
-    $role3 = new \Signes\Acl\Model\Role(array(
+    $role3 = new \App\Models\Acl\Role(array(
         'name'   => 'My Role 3',
         'filter' => 'R'
     ));
@@ -166,21 +187,21 @@ and here is code how to reach this:
     /**
      * Create and save example permissions
      */
-    $permission1 = Acl::createPermission(
+    $permission1 = \Acl::createPermission(
         'zone1',
         'access1',
         array('act1', 'act2', 'act3'),
         'Zone 1'
     );
 
-    $permission2 = Acl::createPermission(
+    $permission2 = \Acl::createPermission(
         'zone2',
         'access2',
         array('act1', 'act2', 'act3'),
         'Zone 2'
     );
 
-    $permission3 = Acl::createPermission(
+    $permission3 = \Acl::createPermission(
         'zone3',
         'access3',
         array('act1', 'act2', 'act3'),
@@ -192,36 +213,36 @@ and here is code how to reach this:
      */
 
     // Load guest user for tests and set user role
-    $guestUser = \Signes\Acl\Model\User::find(1);
+    $guestUser = \App\Models\Acl\User::find(1);
     $guestUser->group_id = $group->id;
     $guestUser->save();
 
     // Connect user with permissions
-    Acl::grantUserPermission($permission1, $guestUser, array('act1'));
-    Acl::grantUserPermission($permission2, $guestUser, array('act1', 'act2', 'act3'));
+    \Acl::grantUserPermission($permission1, $guestUser, array('act1'));
+    \Acl::grantUserPermission($permission2, $guestUser, array('act1', 'act2', 'act3'));
 
     // Connect group with permissions
-    Acl::grantGroupPermission($permission1, $group, array('act3'));
+    \Acl::grantGroupPermission($permission1, $group, array('act3'));
 
     // Connect roles with permissions
-    Acl::grantRolePermission($permission3, $role1, array('act1'));
-    Acl::grantRolePermission($permission1, $role2, array('act2'));
-    Acl::grantRolePermission($permission2, $role3, array('act2'));
+    \Acl::grantRolePermission($permission3, $role1, array('act1'));
+    \Acl::grantRolePermission($permission1, $role2, array('act2'));
+    \Acl::grantRolePermission($permission2, $role3, array('act2'));
 
     // Connect user with roles
-    Acl::grantUserRole($role2, $guestUser);
-    Acl::grantUserRole($role3, $guestUser);
+    \Acl::grantUserRole($role2, $guestUser);
+    \Acl::grantUserRole($role3, $guestUser);
 
     // Connect group with roles
-    Acl::grantGroupRole($role1, $group);
-    Acl::grantGroupRole($role2, $group);
+    \Acl::grantGroupRole($role1, $group);
+    \Acl::grantGroupRole($role2, $group);
 ```
 
 ##User object##
-Most important object in ACL is User representation, which is provided by `\Signes\Acl\Model\User` object.
-For more information's you can check `src/models/acl/User.php` file.
+Most important object in ACL is User representation, which is provided by `\App\Models\Acl\User` object.
+For more information's you can check `app/Models/Acl/User.php` file.
 
-Of course you can create your own User object, just remember to extend your class by `\Signes\Acl\Model\User`.
+Of course you can create your own User object, just remember to extend your class by `\App\Models\Acl\User`.
 
 Available methods on User object:
 * `$user->getGroup`
