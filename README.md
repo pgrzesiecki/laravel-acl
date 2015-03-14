@@ -1,6 +1,6 @@
 #Laravel ACL#
 
-###For Laravel 4, please use the [laravel5](https://github.com/signes-pl/laravel-acl/tree/laravel5) branch###
+###For Laravel 5, please use the [laravel5](https://github.com/signes-pl/laravel-acl/tree/laravel5) branch###
 
 * [Database schema](#database-schema)
 * [Installation](#installation)
