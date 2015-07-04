@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\Schema;
  */
 class AclGroupRoles extends Migration
 {
+    /**
+     * Detect PostgreSQL database
+     *
+     * @return bool
+     */
+    public function isPGSQL()
+    {
+        $driver = \Config::get('database.default');
+        return \Config::get("database.connections.{$driver}.driver") === 'pgsql';
+    }
 
     /**
      * Run the migrations.
@@ -21,8 +31,14 @@ class AclGroupRoles extends Migration
             Schema::create('acl_group_roles', function ($table) {
                 $table->integer('group_id');
                 $table->integer('role_id');
-                $table->timestamps();
                 $table->primary(['group_id', 'role_id']);
+
+                if ($this->isPGSQL()) {
+                    $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
+                    $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
+                } else {
+                    $table->timestamps();
+                }
             });
 
             DB::table('acl_group_roles')->insert(array(

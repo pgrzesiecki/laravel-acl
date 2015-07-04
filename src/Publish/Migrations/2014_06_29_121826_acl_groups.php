@@ -9,6 +9,16 @@ use Illuminate\Support\Facades\Schema;
  */
 class AclGroups extends Migration
 {
+    /**
+     * Detect PostgreSQL database
+     *
+     * @return bool
+     */
+    public function isPGSQL()
+    {
+        $driver = \Config::get('database.default');
+        return \Config::get("database.connections.{$driver}.driver") === 'pgsql';
+    }
 
     /**
      * Run the migrations.
@@ -21,8 +31,14 @@ class AclGroups extends Migration
         if (!Schema::hasTable('acl_groups')) {
             Schema::create('acl_groups', function ($table) {
                 $table->increments('id');
-                $table->timestamps();
                 $table->string('name', 255);
+
+                if ($this->isPGSQL()) {
+                    $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
+                    $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
+                } else {
+                    $table->timestamps();
+                }
             });
 
             DB::table('acl_groups')->insert(array(

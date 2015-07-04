@@ -11,6 +11,17 @@ class AclRoles extends Migration
 {
 
     /**
+     * Detect PostgreSQL database
+     *
+     * @return bool
+     */
+    public function isPGSQL()
+    {
+        $driver = \Config::get('database.default');
+        return \Config::get("database.connections.{$driver}.driver") === 'pgsql';
+    }
+
+    /**
      * Run the migrations.
      *
      * @return void
@@ -20,9 +31,15 @@ class AclRoles extends Migration
         if (!Schema::hasTable('acl_roles')) {
             Schema::create('acl_roles', function ($table) {
                 $table->increments('id');
-                $table->timestamps();
                 $table->string('name', 255);
                 $table->enum('filter', array('', 'A', 'D', 'R'));
+
+                if ($this->isPGSQL()) {
+                    $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
+                    $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
+                } else {
+                    $table->timestamps();
+                }
             });
 
             DB::table('acl_roles')->insert(array(
