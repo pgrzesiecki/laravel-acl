@@ -4,6 +4,7 @@ namespace Signes\Acl;
 
 // Repository class
 use Signes\Acl\Repository\AclRepository;
+use Auth
 
 abstract class AclManager
 {
@@ -16,6 +17,7 @@ abstract class AclManager
      * @var null|UserInterface
      */
     private $current_user = null;
+    private $useAuth = false;
 
     /**
      * @param AclRepository $repository
@@ -45,6 +47,11 @@ abstract class AclManager
     {
         $this->current_user = $user;
     }
+    
+    public function getPermissions()
+    {
+        return $this->current_user->permissions_array;
+    }
 
     /**
      * Collect permissions for current logged in user.
@@ -60,12 +67,24 @@ abstract class AclManager
          * take user from \Auth library. If it will fail,
          * take Guest account.
          */
-        if ($user) {
-            $this->setUser($user);
-        } elseif (!$this->current_user && !$user) {
-            $this->setUser($this->repository->getGuest());
+         
+         
+         if (!isset($this->current_user) || isset($user)) {
+            if ($user) {
+                $this->setUser($user);
+            } elseif (Auth::check()) {
+                $this->useAuth = true;
+                $this->setUser(Auth::user());
+            } elseif (!$this->current_user && !$user) {
+                $this->setUser($this->repository->getGuest());
+
+            }
         }
 
+        if (isset($this->current_user->permissions_array)) {
+            return $this->current_user->permissions_array;
+        }
+         
         /**
          * Before we ask DB to collect permissions array, let's check
          * if we have required information's in cache.
@@ -77,11 +96,10 @@ abstract class AclManager
         //    return \Cache::get($user_cache_key);
         //}
 
-        /**
-         * Collect all user permissions based on their personal access, groups and roles
+         /**
+         * Collect all user permissions based on their personal access, groups and roles and put in current user
          */
-        $permissions_array = $this->collectUserPermissions($this->current_user);
-
+        $this->current_user->permissions_array = $this->collectUserPermissions($this->current_user);
         /**
          * Storage permission map in cache to save time and decrease number of DB queries.
          *
@@ -89,7 +107,11 @@ abstract class AclManager
          */
         //\Cache::put($user_cache_key, $permissions_array, \Config::get('signes-acl::acl.cache_time'));
 
-        return $permissions_array;
+         if ($this->useAuth) {
+            Auth::user()->permissions_array = $this->current_user->permissions_array;
+        }
+
+        return $this->current_user->permissions_array;
 
     }
 
@@ -104,20 +126,25 @@ abstract class AclManager
     {
 
         $permission_set = array();
+         $user->load('getPermissions', 'getRoles');
 
         /**
          * User may have many personal permissions, iterate through all of them.
          */
-        $user->getPermissions->each(function ($permission) use (&$permission_set) {
+         foreach ($user->getPermissions as $permission) {
             $this->parsePermissions($permission, $permission_set);
-        });
+
+        }
+
+         $user->getRoles->load('getPermissions');
 
         /**
          * User may have many roles permissions, iterate through all of them.
          */
-        $user->getRoles->each(function ($role) use (&$permission_set) {
+
+        foreach ($user->getRoles as $role) {
             $this->collectRolePermission($role, $permission_set);
-        });
+        }
 
         /**
          * User may have only one role
@@ -137,19 +164,23 @@ abstract class AclManager
     public function collectGroupPermissions(GroupInterface $group, array &$permission_set = array())
     {
 
+        $group->load('getPermissions', 'getRoles');
         /**
          * Group may have many permissions, iterate through all of them.
          */
-        $group->getPermissions->each(function ($permission) use (&$permission_set) {
+
+        foreach ($group->getPermissions as $permission) {
             $this->parsePermissions($permission, $permission_set);
-        });
+        }
+
+        $group->getRoles->load('getPermissions');
 
         /**
          * Group may have many roles, iterate through all of them.
          */
-        $group->getRoles->each(function ($role) use (&$permission_set) {
+        foreach ($group->getRoles as $role) {
             $this->collectRolePermission($role, $permission_set);
-        });
+        }
     }
 
     /**
