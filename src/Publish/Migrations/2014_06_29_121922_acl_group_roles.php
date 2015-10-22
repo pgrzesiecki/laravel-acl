@@ -37,7 +37,7 @@ class AclGroupRoles extends Migration
                     $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
                     $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
                 } else {
-                    $table->timestamps();
+                    $table->nullableTimestamps();
                 }
             });
 

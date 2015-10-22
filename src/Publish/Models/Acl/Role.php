@@ -3,13 +3,14 @@
 namespace App\Models\Acl;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Signes\Acl\Exception\UnknownRoleFilter;
 use Signes\Acl\RoleInterface;
 
 /**
  * Class Role
  *
- * @package    App\Models
+ * @package App\Models\Acl
  */
 class Role extends Model implements RoleInterface
 {
@@ -47,7 +48,7 @@ class Role extends Model implements RoleInterface
     /**
      * User role permissions
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function getPermissions()
     {
@@ -61,12 +62,12 @@ class Role extends Model implements RoleInterface
 
     /**
      * Set special filter.
-     * Available values:
-     *  A - allow access to everything
-     *  D - deny access to everything
-     *  R - revoke access to resource
      *
-     * @param $filter
+     * @param string $filter      filter to set, available values:
+     *                            A - allow access to everything
+     *                            D - deny access to everything
+     *                            R - revoke access to resource
+     * @return $this
      * @throws UnknownRoleFilter
      */
     public function setFilter($filter)
@@ -77,6 +78,42 @@ class Role extends Model implements RoleInterface
         }
 
         $this->filter = $filter;
+
+        return $this;
     }
 
+    /**
+     * Return special filter
+     *
+     * @return string filter, available options:
+     *                A - allow access to everything
+     *                D - deny access to everything
+     *                R - revoke access to resource
+     */
+    public function getFilter()
+    {
+        return (string) $this->filter;
+    }
+
+    /**
+     * Set group name
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function setName($name)
+    {
+        $this->name = (string) $name;
+        return $this;
+    }
+
+    /**
+     * Return group name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return (string) $this->name;
+    }
 }

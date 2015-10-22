@@ -2,7 +2,7 @@
 
 namespace Signes\Acl\Repository;
 
-use App\Models\Acl\Permission;
+use Exception;
 use Signes\Acl\Exception\DuplicateEntry;
 use Signes\Acl\GroupInterface;
 use Signes\Acl\PermissionInterface;
@@ -12,8 +12,7 @@ use Signes\Acl\UserInterface;
 /**
  * Class SignesAclRepository
  *
- * @package    Signes\Acl
- * @subpackage Signes\Acl\Repository
+ * @package Signes\Acl\Repository
  */
 class SignesAclRepository implements AclRepository
 {
@@ -21,7 +20,7 @@ class SignesAclRepository implements AclRepository
     /**
      * Application namespace
      *
-     * @var]
+     * @var string
      */
     protected $appNamespace = "App";
 
@@ -40,7 +39,7 @@ class SignesAclRepository implements AclRepository
     /**
      * Set different site namespace
      *
-     * @param $namespace
+     * @param string $namespace , new namespace
      */
     public function setSiteNamespace($namespace)
     {
@@ -48,9 +47,9 @@ class SignesAclRepository implements AclRepository
     }
 
     /**
-     * Get Guest object
+     * Get user guest object
      *
-     * @return mixed
+     * @return UserInterface
      */
     public function getGuest()
     {
@@ -60,45 +59,50 @@ class SignesAclRepository implements AclRepository
     /**
      * Create new permission
      *
-     * @param $area
-     * @param $permission
-     * @param null $actions
-     * @param string $description
-     * @return Permission
+     * @param string $area        ,area name
+     * @param string $permission  , permission name
+     * @param array|null $actions , permission actions
+     * @param string $description , permission description
+     * @return false|PermissionInterface
      */
-    public function createPermission($area, $permission, $actions = null, $description = '')
+    public function createPermission($area, $permission, $actions = null, $description = null)
     {
-        $permission_exists = $this->getModelName('Permission')
+        // Cast data
+        $actions = (array) $actions;
+
+        // Check if permissions not exists yet
+        if ($this->getModelName('Permission')
             ->where('area', '=', $area)
             ->where('permission', '=', $permission)
-            ->first();
-
-        if (!$permission_exists) {
-            $new_permission = $this->getModelName('Permission');
-            $new_permission->area = $area;
-            $new_permission->permission = $permission;
-            $new_permission->actions = ($actions !== null) ? serialize($actions) : null;
-            $new_permission->description = $description;
-            $new_permission->save();
-
-            return $new_permission;
-
+            ->first()
+        ) {
+            return false;
         }
 
-        return false;
+        // Create new object
+        $newPermission = $this->getModelName('Permission');
+        $newPermission->setArea($area)
+            ->setPermission($permission)
+            ->setActions($actions)
+            ->setDescription($description)
+            ->save();
+
+        return $newPermission;
     }
 
     /**
      * Delete permission from base.
      * We can remove whole zone, zone with permission, or one specific action.
      *
-     * @param $area
-     * @param null $permission
-     * @param null $actions
-     * @return bool
+     * @param string $area               , are name
+     * @param string|null $permission    , permission name
+     * @param array|string|null $actions , action(s) name
+     * @return false|int , number of removed items or false is error occurred
      */
     public function deletePermission($area, $permission = null, $actions = null)
     {
+        // Cast data
+        $area = (string) $area;
 
         /**
          * Delete area
@@ -120,23 +124,20 @@ class SignesAclRepository implements AclRepository
          * Keep row in database, but remove actions from array
          */
         if (is_string($permission) && $actions !== null) {
-            $actions = !is_array($actions) ? array($actions) : $actions;
+            $actions = !is_array($actions) ? [(string) $actions] : $actions;
             $permission = $this->getModelName('Permission')
                 ->where('area', '=', $area)
                 ->where('permission', '=', $permission)->first();
 
             if ($permission) {
-                $currentActions = unserialize($permission->actions);
-                if (is_array($currentActions)) {
-                    foreach ($actions as $action) {
-                        if (($key = array_search($action, $currentActions)) !== false) {
-                            unset($currentActions[$key]);
-                        }
+                $currentActions = $permission->getActions();
+                foreach ($actions as $action) {
+                    if (($key = array_search($action, $currentActions)) !== false) {
+                        unset($currentActions[$key]);
                     }
-
-                    $permission->actions = serialize($currentActions);
-                    return $permission->save();
                 }
+
+                return $permission->setActions($currentActions)->save();
             }
         }
 
@@ -148,17 +149,12 @@ class SignesAclRepository implements AclRepository
      *
      * @param PermissionInterface $permission
      * @param UserInterface $user
-     * @param array $actions , actions array or true, if true all actions will be granted
+     * @param array|true $actions , actions array or true, if true all actions will be granted
      * @throws DuplicateEntry
      */
-    public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = array())
+    public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = [])
     {
-        try {
-            $actions = ($actions === true) ? serialize($permission->getAttribute('actions')) : serialize($actions);
-            $user->getPermissions()->save($permission, array('actions' => $actions));
-        } catch (\Exception $e) {
-            throw new DuplicateEntry($e->getMessage());
-        }
+        $this->grantEntityPermission($permission, $user, $actions);
     }
 
     /**
@@ -169,14 +165,9 @@ class SignesAclRepository implements AclRepository
      * @param array $actions , actions array or true, if true all actions will be granted
      * @throws DuplicateEntry
      */
-    public function grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = array())
+    public function grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = [])
     {
-        try {
-            $actions = ($actions === true) ? $permission->getAttribute('actions') : serialize($actions);
-            $group->getPermissions()->save($permission, array('actions' => $actions));
-        } catch (\Exception $e) {
-            throw new DuplicateEntry($e->getMessage());
-        }
+        $this->grantEntityPermission($permission, $group, $actions);
     }
 
 
@@ -188,12 +179,25 @@ class SignesAclRepository implements AclRepository
      * @param array $actions , actions array or true, if true all actions will be granted
      * @throws DuplicateEntry
      */
-    public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = array())
+    public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = [])
+    {
+        $this->grantEntityPermission($permission, $role, $actions);
+    }
+
+    /**
+     * Grant entity permission
+     *
+     * @param PermissionInterface $permission
+     * @param $entity        , one of object which implement 'getPermissions' method
+     * @param array $actions , actions array or true, if true all actions will be granted
+     * @throws DuplicateEntry
+     */
+    private function grantEntityPermission(PermissionInterface $permission, $entity, $actions = [])
     {
         try {
-            $actions = ($actions === true) ? $permission->getAttribute('actions') : serialize($actions);
-            $role->getPermissions()->save($permission, array('actions' => $actions));
-        } catch (\Exception $e) {
+            $actions = ($actions === true) ? $permission->getActions() : serialize($actions);
+            $entity->getPermissions()->attach($permission->getAttribute('id'), ['actions' => $actions]);
+        } catch (Exception $e) {
             throw new DuplicateEntry($e->getMessage());
         }
     }
@@ -208,8 +212,8 @@ class SignesAclRepository implements AclRepository
     public function grantUserRole(RoleInterface $role, UserInterface $user)
     {
         try {
-            $user->getRoles()->save($role);
-        } catch (\Exception $e) {
+            $user->getRoles()->attach($role->getAttribute('id'));
+        } catch (Exception $e) {
             throw new DuplicateEntry($e->getMessage());
         }
     }
@@ -224,12 +228,11 @@ class SignesAclRepository implements AclRepository
     public function grantGroupRole(RoleInterface $role, GroupInterface $group)
     {
         try {
-            $group->getRoles()->save($role);
-        } catch (\Exception $e) {
+            $group->getRoles()->attach($role->getAttribute('id'));
+        } catch (Exception $e) {
             throw new DuplicateEntry($e->getMessage());
         }
     }
-
 
     /**
      * Revoke user permission
@@ -240,7 +243,7 @@ class SignesAclRepository implements AclRepository
      */
     public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
     {
-        return $user->getPermissions()->detach($permission->getAttribute('id'));
+        return (bool) $user->getPermissions()->detach($permission->getAttribute('id'));
     }
 
     /**
@@ -252,7 +255,7 @@ class SignesAclRepository implements AclRepository
      */
     public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
     {
-        return $group->getPermissions()->detach($permission->getAttribute('id'));
+        return (bool) $group->getPermissions()->detach($permission->getAttribute('id'));
     }
 
     /**
@@ -264,7 +267,7 @@ class SignesAclRepository implements AclRepository
      */
     public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
     {
-        return $role->getPermissions()->detach($permission->getAttribute('id'));
+        return (bool) $role->getPermissions()->detach($permission->getAttribute('id'));
     }
 
     /**
@@ -272,10 +275,11 @@ class SignesAclRepository implements AclRepository
      *
      * @param RoleInterface $role
      * @param UserInterface $user
+     * @return bool
      */
     public function revokeUserRole(RoleInterface $role, UserInterface $user)
     {
-        return $user->getRoles()->detach($role->getAttribute('id'));
+        return (bool) $user->getRoles()->detach($role->getAttribute('id'));
     }
 
     /**
@@ -283,9 +287,10 @@ class SignesAclRepository implements AclRepository
      *
      * @param RoleInterface $role
      * @param GroupInterface $group
+     * @return bool
      */
     public function revokeGroupRole(RoleInterface $role, GroupInterface $group)
     {
-        return $group->getRoles()->detach($role->getAttribute('id'));
+        return (bool) $group->getRoles()->detach($role->getAttribute('id'));
     }
 }

@@ -32,13 +32,13 @@ class AclRoles extends Migration
             Schema::create('acl_roles', function ($table) {
                 $table->increments('id');
                 $table->string('name', 255);
-                $table->enum('filter', array('', 'A', 'D', 'R'));
+                $table->enum('filter', array('', 'A', 'D', 'R'))->default('');
 
                 if ($this->isPGSQL()) {
                     $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
                     $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
                 } else {
-                    $table->timestamps();
+                    $table->nullableTimestamps();
                 }
             });
 

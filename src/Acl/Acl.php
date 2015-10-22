@@ -2,20 +2,25 @@
 
 namespace Signes\Acl;
 
+/**
+ * Class Acl
+ *
+ * @package Signes\Acl
+ */
 class Acl extends AclManager
 {
     /**
      * Check if resource is available
      *
-     * @param $resource
-     * @param UserInterface $user
+     * @param string $resource , resource identifier
+     * @param UserInterface $user , user object
      * @return bool
      */
     public function isAllow($resource, UserInterface $user = null)
     {
-        $resource_map = $this->__prepareResource($resource);
+        $resourceMap = $this->__prepareResource($resource);
         $permissions = $this->collectPermissions($user);
-        return $this->__compareResourceWithPermissions($resource_map, $permissions);
+        return $this->__compareResourceWithPermissions($resourceMap, $permissions);
     }
 
 
@@ -62,13 +67,13 @@ class Acl extends AclManager
      * @param UserInterface $user
      * @param array $actions
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw @see \Signes\Acl\Exception\DuplicateEntry
      * @return mixed
      */
     public function grantUserPermission(
         PermissionInterface $permission,
         UserInterface $user,
-        $actions = array(),
+        $actions = [],
         $overwrite = false
     ) {
 
@@ -92,7 +97,7 @@ class Acl extends AclManager
     public function grantGroupPermission(
         PermissionInterface $permission,
         GroupInterface $group,
-        $actions = array(),
+        $actions = [],
         $overwrite = false
     ) {
 
@@ -116,7 +121,7 @@ class Acl extends AclManager
     public function grantRolePermission(
         PermissionInterface $permission,
         RoleInterface $role,
-        $actions = array(),
+        $actions = [],
         $overwrite = false
     ) {
 

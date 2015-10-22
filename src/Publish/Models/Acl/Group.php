@@ -3,6 +3,7 @@
 namespace App\Models\Acl;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Signes\Acl\GroupInterface;
 
 /**
@@ -37,7 +38,7 @@ class Group extends Model implements GroupInterface
     /**
      * User group permissions
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function getPermissions()
     {
@@ -52,7 +53,7 @@ class Group extends Model implements GroupInterface
     /**
      * Get group roles
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function getRoles()
     {
@@ -62,5 +63,37 @@ class Group extends Model implements GroupInterface
             'group_id',
             'role_id'
         )->withTimestamps();
+    }
+
+    /**
+     * Return all users belongs to group
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function getUsers()
+    {
+        return $this->hasMany("{$this->namespace}\\Models\\Acl\\User", "group_id", "id");
+    }
+
+    /**
+     * Set group name
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function setName($name)
+    {
+        $this->name = (string) $name;
+        return $this;
+    }
+
+    /**
+     * Return group name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return (string) $this->name;
     }
 }

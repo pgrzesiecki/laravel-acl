@@ -5,6 +5,11 @@ namespace Signes\Acl;
 // Repository class
 use Signes\Acl\Repository\AclRepository;
 
+/**
+ * Class AclManager
+ *
+ * @package Signes\Acl
+ */
 abstract class AclManager
 {
 
@@ -15,9 +20,16 @@ abstract class AclManager
      *
      * @var null|UserInterface
      */
-    private $current_user = null;
+    private $currentUser = null;
 
     /**
+     * @var AclRepository
+     */
+    protected $repository;
+
+    /**
+     * Constructor
+     *
      * @param AclRepository $repository
      */
     public function __construct(AclRepository $repository)
@@ -28,7 +40,7 @@ abstract class AclManager
     /**
      * Set different site namespace
      *
-     * @param $namespace
+     * @param string $namespace , new namespace
      * @return mixed
      */
     public function setSiteNamespace($namespace)
@@ -43,7 +55,7 @@ abstract class AclManager
      */
     public function setUser(UserInterface $user)
     {
-        $this->current_user = $user;
+        $this->currentUser = $user;
     }
 
     /**
@@ -52,9 +64,8 @@ abstract class AclManager
      * @param UserInterface $user
      * @return array
      */
-    public function collectPermissions(UserInterface $user = null)
+    protected function collectPermissions(UserInterface $user = null)
     {
-
         /**
          * If there is no user in local instance,
          * take user from \Auth library. If it will fail,
@@ -62,7 +73,7 @@ abstract class AclManager
          */
         if ($user) {
             $this->setUser($user);
-        } elseif (!$this->current_user && !$user) {
+        } elseif (!$this->currentUser && !$user) {
             $this->setUser($this->repository->getGuest());
         }
 
@@ -72,7 +83,7 @@ abstract class AclManager
          *
          * @todo Add better way to cache permissions
          */
-        //$user_cache_key = 'acl:user:' . $this->current_user->id;
+        //$user_cache_key = 'acl:user:' . $this->currentUser->id;
         //if (\Cache::has($user_cache_key)) {
         //    return \Cache::get($user_cache_key);
         //}
@@ -80,7 +91,7 @@ abstract class AclManager
         /**
          * Collect all user permissions based on their personal access, groups and roles
          */
-        $permissions_array = $this->collectUserPermissions($this->current_user);
+        $permissionsArray = $this->collectUserPermissions($this->currentUser);
 
         /**
          * Storage permission map in cache to save time and decrease number of DB queries.
@@ -89,7 +100,7 @@ abstract class AclManager
          */
         //\Cache::put($user_cache_key, $permissions_array, \Config::get('signes-acl::acl.cache_time'));
 
-        return $permissions_array;
+        return $permissionsArray;
 
     }
 
@@ -100,55 +111,53 @@ abstract class AclManager
      * @param UserInterface $user
      * @return array
      */
-    public function collectUserPermissions(UserInterface $user)
+    private function collectUserPermissions(UserInterface $user)
     {
 
-        $permission_set = array();
+        $permissionSet = [];
 
         /**
          * User may have many personal permissions, iterate through all of them.
          */
-        $user->getPermissions->each(function ($permission) use (&$permission_set) {
-            $this->parsePermissions($permission, $permission_set);
+        $user->getPermissions->each(function ($permission) use (&$permissionSet) {
+            $this->parsePermissions($permission, $permissionSet);
         });
 
         /**
          * User may have many roles permissions, iterate through all of them.
          */
-        $user->getRoles->each(function ($role) use (&$permission_set) {
-            $this->collectRolePermission($role, $permission_set);
+        $user->getRoles->each(function ($role) use (&$permissionSet) {
+            $this->collectRolePermission($role, $permissionSet);
         });
 
         /**
          * User may have only one role
          */
-        $this->collectGroupPermissions($user->getGroup, $permission_set);
+        $this->collectGroupPermissions($user->getGroup, $permissionSet);
 
-        return $permission_set;
-
+        return $permissionSet;
     }
 
     /**
      * Collect permissions for group
      *
      * @param GroupInterface $group
-     * @param array $permission_set
+     * @param array $permissionSet
      */
-    public function collectGroupPermissions(GroupInterface $group, array &$permission_set = array())
+    private function collectGroupPermissions(GroupInterface $group, array &$permissionSet = [])
     {
-
         /**
          * Group may have many permissions, iterate through all of them.
          */
-        $group->getPermissions->each(function ($permission) use (&$permission_set) {
-            $this->parsePermissions($permission, $permission_set);
+        $group->getPermissions->each(function ($permission) use (&$permissionSet) {
+            $this->parsePermissions($permission, $permissionSet);
         });
 
         /**
          * Group may have many roles, iterate through all of them.
          */
-        $group->getRoles->each(function ($role) use (&$permission_set) {
-            $this->collectRolePermission($role, $permission_set);
+        $group->getRoles->each(function ($role) use (&$permissionSet) {
+            $this->collectRolePermission($role, $permissionSet);
         });
     }
 
@@ -156,21 +165,21 @@ abstract class AclManager
      * Collect permissions for role
      *
      * @param RoleInterface $role
-     * @param array $permission_set
+     * @param array $permissionSet
      */
-    public function collectRolePermission(RoleInterface $role, array &$permission_set = array())
+    private function collectRolePermission(RoleInterface $role, array &$permissionSet = [])
     {
 
         /**
          * Roles might contain very special filters
          */
-        $this->parseSpecialRoles($role, $permission_set);
+        $this->parseSpecialRoles($role, $permissionSet);
 
         /**
          * Role may have many permissions, iterate through all of them.
          */
-        $role->getPermissions->each(function ($permission) use (&$permission_set, $role) {
-            $this->parsePermissions($permission, $permission_set, ($role->filter === 'R'));
+        $role->getPermissions->each(function ($permission) use (&$permissionSet, $role) {
+            $this->parsePermissions($permission, $permissionSet, ($role->filter === 'R'));
         });
 
     }
@@ -182,17 +191,17 @@ abstract class AclManager
      * A - Allow, this filter allow access to ANY resource (somethings like root)
      *
      * @param RoleInterface $role
-     * @param array $permission_set
+     * @param array $permissionSet
      */
-    private function parseSpecialRoles(RoleInterface $role, array &$permission_set = array())
+    private function parseSpecialRoles(RoleInterface $role, array &$permissionSet = [])
     {
 
         switch ($role->filter) {
             case 'D':
-                array_set($permission_set, '_special.deny', true);
+                array_set($permissionSet, '_special.deny', true);
                 break;
             case 'A':
-                array_set($permission_set, '_special.root', true);
+                array_set($permissionSet, '_special.root', true);
                 break;
         }
 
@@ -203,33 +212,33 @@ abstract class AclManager
      * Here we build part of permissions set.
      *
      * @param PermissionInterface $permission
-     * @param array $permission_set
+     * @param array $permissionSet
      * @param bool $removed_populate
      */
     private function parsePermissions(
         PermissionInterface $permission,
-        array &$permission_set,
+        array &$permissionSet,
         $removed_populate = false
     ) {
         $permission_actions = (array) ((isset($permission->actions)) ?
-            unserialize($permission->actions) : array());
+            unserialize($permission->actions) : []);
         $granted_actions = (array) ((isset($permission->pivot->actions)) ?
-            unserialize($permission->pivot->actions) : array());
+            unserialize($permission->pivot->actions) : []);
         $allowed_actions = array_intersect($permission_actions, $granted_actions);
 
         if (!$removed_populate) {
             $dot_set = $permission->area . '.' . $permission->permission;
-            $array_exists = isset($permission_set[$permission->area][$permission->permission]);
+            $array_exists = isset($permissionSet[$permission->area][$permission->permission]);
         } else {
             $dot_set = '_special.removed.' . $permission->area . '.' . $permission->permission;
-            $array_exists = isset($permission_set['_special']['removed'][$permission->area][$permission->permission]);
+            $array_exists = isset($permissionSet['_special']['removed'][$permission->area][$permission->permission]);
         }
 
         if (!$array_exists) {
-            array_set($permission_set, $dot_set, $allowed_actions);
+            array_set($permissionSet, $dot_set, $allowed_actions);
         } else {
-            $existed = array_get($permission_set, $dot_set);
-            array_set($permission_set, $dot_set, array_unique(array_merge($existed, $allowed_actions)));
+            $existed = array_get($permissionSet, $dot_set);
+            array_set($permissionSet, $dot_set, array_unique(array_merge($existed, $allowed_actions)));
         }
     }
 
@@ -248,11 +257,11 @@ abstract class AclManager
 
         // Wrong resource data? No access
         if (!$area_permission) {
-            return array(
+            return [
                 'area'       => null,
                 'permission' => null,
                 'actions'    => null
-            );
+            ];
         }
 
         // Get area and permission to check
@@ -266,11 +275,11 @@ abstract class AclManager
             $actions = null;
         }
 
-        return array(
+        return [
             'area'       => $area,
             'permission' => $permission,
             'actions'    => $actions
-        );
+        ];
     }
 
     /**

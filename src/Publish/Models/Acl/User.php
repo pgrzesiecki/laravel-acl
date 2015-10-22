@@ -7,16 +7,18 @@ use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Signes\Acl\GroupInterface;
 use Signes\Acl\UserInterface as SignesAclUserInterface;
 
 /**
  * Class User
  *
- * @package    App\Models
+ * @package App\Models\Acl
  */
 class User extends Model implements AuthenticatableContract, CanResetPasswordContract, SignesAclUserInterface
 {
-
     use Authenticatable, CanResetPassword;
 
     /**
@@ -41,9 +43,9 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
     protected $hidden = ['password', 'remember_token'];
 
     /**
-     * User personal permissions
+     * Get user personal permissions
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function getPermissions()
     {
@@ -58,7 +60,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
     /**
      * Get user roles
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     * @return BelongsToMany
      */
     public function getRoles()
     {
@@ -73,10 +75,22 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
     /**
      * Get user group
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return HasOne
      */
     public function getGroup()
     {
         return $this->hasOne("{$this->namespace}\\Models\\Acl\\Group", 'id', 'group_id');
+    }
+
+    /**
+     * Set user group
+     *
+     * @param GroupInterface $group
+     * @return $this
+     */
+    public function setGroup(GroupInterface $group)
+    {
+        $this->group_id = $group->getAttribute('id');
+        return $this;
     }
 }

@@ -27,7 +27,6 @@ class AclGroups extends Migration
      */
     public function up()
     {
-
         if (!Schema::hasTable('acl_groups')) {
             Schema::create('acl_groups', function ($table) {
                 $table->increments('id');
@@ -37,27 +36,25 @@ class AclGroups extends Migration
                     $table->timestamp('created_at')->default(DB::raw('now()::timestamp(0)'));
                     $table->timestamp('updated_at')->default(DB::raw('now()::timestamp(0)'));
                 } else {
-                    $table->timestamps();
+                    $table->nullableTimestamps();
                 }
             });
 
-            DB::table('acl_groups')->insert(array(
+            DB::table('acl_groups')->insert([
                 'id'   => '1',
                 'name' => 'Banned'
-            ));
+            ]);
 
-            DB::table('acl_groups')->insert(array(
+            DB::table('acl_groups')->insert([
                 'id'   => '2',
                 'name' => 'Guests'
-            ));
+            ]);
 
-            DB::table('acl_groups')->insert(array(
+            DB::table('acl_groups')->insert([
                 'id'   => '3',
                 'name' => 'Users'
-            ));
+            ]);
         }
-
-
     }
 
     /**

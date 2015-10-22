@@ -31,11 +31,11 @@ class AclServiceProvider extends ServiceProvider
 
     /**
      * Boot Signes ACL package
+     * Run:
+     *  php artisan vendor:publish --provider="Signes\Acl\AclServiceProvider"
      */
     public function boot()
     {
-        // php artisan vendor:publish --provider="Signes\Acl\AclServiceProvider"
-
         // Publish database migrations
         $this->publishes([
             __DIR__ . '/../Publish/Migrations/' => base_path('/database/migrations')
