@@ -1,5 +1,10 @@
 #Laravel 5 ACL#
 
+[![Latest Stable Version](https://poser.pugx.org/signes/acl/v/stable)](https://packagist.org/packages/signes/acl)
+[![Build Status](https://travis-ci.org/signes-pl/laravel-acl.svg?branch=master)](https://travis-ci.org/signes-pl/laravel-acl)
+[![Total Downloads](https://poser.pugx.org/signes/acl/downloads)](https://packagist.org/packages/signes/acl)
+[![License](https://poser.pugx.org/signes/acl/license)](https://packagist.org/packages/signes/acl)
+
 ###For Laravel 4, please use the [laravel4](https://github.com/signes-pl/laravel-acl/tree/laravel4) branch###
 
 * [Database schema](#database-schema)
