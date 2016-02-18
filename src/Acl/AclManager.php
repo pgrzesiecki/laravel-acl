@@ -2,8 +2,11 @@
 
 namespace Signes\Acl;
 
-// Repository class
-use Signes\Acl\Repository\AclRepository;
+use Signes\Acl\Contract\AclRepository;
+use Signes\Acl\Contract\GroupInterface;
+use Signes\Acl\Contract\PermissionInterface;
+use Signes\Acl\Contract\RoleInterface;
+use Signes\Acl\Contract\UserInterface;
 
 /**
  * Class AclManager
@@ -14,18 +17,17 @@ abstract class AclManager
 {
 
     /**
+     * @var AclRepository
+     */
+    protected $repository;
+    /**
      * User in current instance.
      * Used when we want to check access many times in one request.
      * In this case we ask DB only once.
      *
-     * @var null|UserInterface
+     * @var UserInterface
      */
-    private $currentUser = null;
-
-    /**
-     * @var AclRepository
-     */
-    protected $repository;
+    private $currentUser;
 
     /**
      * Constructor
@@ -49,6 +51,22 @@ abstract class AclManager
     }
 
     /**
+     * If there is no user in local instance,
+     * take user from \Auth library. If it will fail,
+     * take Guest account.
+     *
+     * @param UserInterface $user
+     */
+    protected function ensureUser(UserInterface $user = null)
+    {
+        if ($user) {
+            $this->setUser($user);
+        } elseif (!$this->getUser() && !$user) {
+            $this->setUser($this->repository->getGuest());
+        }
+    }
+
+    /**
      * Set user to checks
      *
      * @param UserInterface $user
@@ -59,24 +77,20 @@ abstract class AclManager
     }
 
     /**
-     * Collect permissions for current logged in user.
+     * @return UserInterface
+     */
+    protected function getUser()
+    {
+        return $this->currentUser;
+    }
+
+    /**
+     * Collect permissions for specific user.
      *
-     * @param UserInterface $user
      * @return array
      */
-    protected function collectPermissions(UserInterface $user = null)
+    protected function collectPermissions()
     {
-        /**
-         * If there is no user in local instance,
-         * take user from \Auth library. If it will fail,
-         * take Guest account.
-         */
-        if ($user) {
-            $this->setUser($user);
-        } elseif (!$this->currentUser && !$user) {
-            $this->setUser($this->repository->getGuest());
-        }
-
         /**
          * Before we ask DB to collect permissions array, let's check
          * if we have required information's in cache.
@@ -91,7 +105,7 @@ abstract class AclManager
         /**
          * Collect all user permissions based on their personal access, groups and roles
          */
-        $permissionsArray = $this->collectUserPermissions($this->currentUser);
+        $permissionsArray = $this->collectUserPermissions($this->getUser());
 
         /**
          * Storage permission map in cache to save time and decrease number of DB queries.
@@ -119,21 +133,105 @@ abstract class AclManager
         /**
          * User may have many personal permissions, iterate through all of them.
          */
-        $user->getPermissions->each(function ($permission) use (&$permissionSet) {
+        foreach ($this->repository->getPermissionsFor($user) as $permission) {
             $this->parsePermissions($permission, $permissionSet);
-        });
+        };
 
         /**
          * User may have many roles permissions, iterate through all of them.
          */
-        $user->getRoles->each(function ($role) use (&$permissionSet) {
-            $this->collectRolePermission($role, $permissionSet);
-        });
+        $user->getRoles->each(
+            function ($role) use (&$permissionSet) {
+                $this->collectRolePermission($role, $permissionSet);
+            }
+        );
 
         /**
          * User may have only one role
          */
         $this->collectGroupPermissions($user->getGroup, $permissionSet);
+
+        return $permissionSet;
+    }
+
+    /**
+     * Populate permission set.
+     * Here we build part of permissions set.
+     *
+     * @param PermissionInterface $permission
+     * @param array $permissionSet
+     * @param bool $removedPopulate
+     */
+    protected function parsePermissions(
+        PermissionInterface $permission,
+        array &$permissionSet,
+        $removedPopulate = false
+    ) {
+        $grantedActions = (array) ((isset($permission->pivot->actions)) ? unserialize(
+            $permission->pivot->actions
+        ) : []);
+        $allowedActions = array_intersect($permission->getActions(), $grantedActions);
+
+        if (!$removedPopulate) {
+            $dotSet = "{$permission->getArea()}.{$permission->getPermission()}";
+            $arrayExists = isset($permissionSet[$permission->getArea()][$permission->getPermission()]);
+        } else {
+            $dotSet = "_special.removed.{$permission->getArea()}.{$permission->getPermission()}";
+            $arrayExists = isset($permissionSet['_special']['removed'][$permission->getArea(
+                )][$permission->getPermission()]);
+        }
+
+        if (!$arrayExists) {
+            array_set($permissionSet, $dotSet, $allowedActions);
+        } else {
+            $existed = array_get($permissionSet, $dotSet);
+            array_set($permissionSet, $dotSet, array_unique(array_merge($existed, $allowedActions)));
+        }
+    }
+
+    /**
+     * Collect permissions for role
+     *
+     * @param RoleInterface $role
+     * @param array $permissionSet
+     */
+    private function collectRolePermission(RoleInterface $role, array &$permissionSet = [])
+    {
+
+        /**
+         * Roles might contain very special filters
+         */
+        $permissionSet = $this->parseSpecialRoles($role, $permissionSet);
+
+        /**
+         * Role may have many permissions, iterate through all of them.
+         */
+        foreach ($this->repository->getPermissionsFor($role) as $permission) {
+            $this->parsePermissions($permission, $permissionSet, ($role->getFilter() === 'R'));
+        };
+    }
+
+    /**
+     * Check special filters added to roles.
+     * We have few special roles like:
+     * D - Deny, this filter deny access to ANY resource (something like banned)
+     * A - Allow, this filter allow access to ANY resource (somethings like root)
+     *
+     * @param RoleInterface $role
+     * @param array $permissionSet
+     * @return array
+     */
+    protected function parseSpecialRoles(RoleInterface $role, array $permissionSet = [])
+    {
+
+        switch ($role->getFilter()) {
+            case 'D':
+                array_set($permissionSet, '_special.deny', true);
+                break;
+            case 'A':
+                array_set($permissionSet, '_special.root', true);
+                break;
+        }
 
         return $permissionSet;
     }
@@ -149,97 +247,18 @@ abstract class AclManager
         /**
          * Group may have many permissions, iterate through all of them.
          */
-        $group->getPermissions->each(function ($permission) use (&$permissionSet) {
+        foreach ($this->repository->getPermissionsFor($group) as $permission) {
             $this->parsePermissions($permission, $permissionSet);
-        });
+        };
 
         /**
          * Group may have many roles, iterate through all of them.
          */
-        $group->getRoles->each(function ($role) use (&$permissionSet) {
-            $this->collectRolePermission($role, $permissionSet);
-        });
-    }
-
-    /**
-     * Collect permissions for role
-     *
-     * @param RoleInterface $role
-     * @param array $permissionSet
-     */
-    private function collectRolePermission(RoleInterface $role, array &$permissionSet = [])
-    {
-
-        /**
-         * Roles might contain very special filters
-         */
-        $this->parseSpecialRoles($role, $permissionSet);
-
-        /**
-         * Role may have many permissions, iterate through all of them.
-         */
-        $role->getPermissions->each(function ($permission) use (&$permissionSet, $role) {
-            $this->parsePermissions($permission, $permissionSet, ($role->filter === 'R'));
-        });
-
-    }
-
-    /**
-     * Check special filters added to roles.
-     * We have few special roles like:
-     * D - Deny, this filter deny access to ANY resource (something like banned)
-     * A - Allow, this filter allow access to ANY resource (somethings like root)
-     *
-     * @param RoleInterface $role
-     * @param array $permissionSet
-     */
-    private function parseSpecialRoles(RoleInterface $role, array &$permissionSet = [])
-    {
-
-        switch ($role->filter) {
-            case 'D':
-                array_set($permissionSet, '_special.deny', true);
-                break;
-            case 'A':
-                array_set($permissionSet, '_special.root', true);
-                break;
-        }
-
-    }
-
-    /**
-     * Populate permission set.
-     * Here we build part of permissions set.
-     *
-     * @param PermissionInterface $permission
-     * @param array $permissionSet
-     * @param bool $removed_populate
-     */
-    private function parsePermissions(
-        PermissionInterface $permission,
-        array &$permissionSet,
-        $removed_populate = false
-    ) {
-        $permission_actions = (array) ((isset($permission->actions)) ?
-            unserialize($permission->actions) : []);
-        $granted_actions = (array) ((isset($permission->pivot->actions)) ?
-            unserialize($permission->pivot->actions) : []);
-        $allowed_actions = array_intersect($permission_actions, $granted_actions);
-
-        if (!$removed_populate) {
-            $dot_set = $permission->area . '.' . $permission->permission;
-            $array_exists = isset($permissionSet[$permission->area][$permission->permission]);
-        } else {
-            $dot_set = '_special.removed.' . $permission->area . '.' . $permission->permission;
-            $array_exists = isset($permissionSet['_special']['removed'][$permission->area][$permission->permission]);
-        }
-
-        if (!$array_exists) {
-            array_set($permissionSet, $dot_set, $allowed_actions);
-        } else {
-            $existed = array_get($permissionSet, $dot_set);
-            array_set($permissionSet, $dot_set, array_unique(array_merge($existed, $allowed_actions)));
-        }
+        $group->getRoles->each(
+            function ($role) use (&$permissionSet) {
+                $this->collectRolePermission($role, $permissionSet);
+            }
+        );
     }
 
     /**
@@ -248,15 +267,15 @@ abstract class AclManager
      * @param $resource
      * @return array
      */
-    protected function __prepareResource($resource)
+    protected function prepareResource($resource)
     {
 
         $data = explode('|', $resource);
-        $area_permission = (isset($data[0])) ? $data[0] : null;
+        $areaPermission = (isset($data[0])) ? $data[0] : null;
         $actions = (isset($data[1])) ? $data[1] : null;
 
         // Wrong resource data? No access
-        if (!$area_permission) {
+        if (!$areaPermission) {
             return [
                 'area'       => null,
                 'permission' => null,
@@ -265,9 +284,9 @@ abstract class AclManager
         }
 
         // Get area and permission to check
-        $area_permission = explode('.', $area_permission);
-        $area = (isset($area_permission[0])) ? $area_permission[0] : null;
-        $permission = (isset($area_permission[1])) ? $area_permission[1] : null;
+        $areaPermission = explode('.', $areaPermission);
+        $area = (isset($areaPermission[0])) ? $areaPermission[0] : null;
+        $permission = (isset($areaPermission[1])) ? $areaPermission[1] : null;
 
         // Get actions to check
         $actions = explode('.', $actions);
@@ -286,11 +305,11 @@ abstract class AclManager
      * Compare Resource with Permission array.
      * Check request to resource with user access set.
      *
-     * @param array $resource_map
+     * @param array $resourceMap
      * @param array $permissions
      * @return bool
      */
-    protected function __compareResourceWithPermissions(array $resource_map, array $permissions)
+    protected function compareResourceWithPermissions(array $resourceMap, array $permissions)
     {
 
         /**
@@ -320,19 +339,15 @@ abstract class AclManager
          *
          * @see https://github.com/signes-pl/laravel-acl
          */
-        if (is_array($resource_map['actions'])) {
-            foreach ($resource_map['actions'] as $action) {
-                if (
-                    !isset($permissions[$resource_map['area']]) ||
-                    !isset($permissions[$resource_map['area']][$resource_map['permission']]) ||
-                    !in_array($action, $permissions[$resource_map['area']][$resource_map['permission']]) ||
-                    (
-                        isset($permissions['_special']['removed'][$resource_map['area']][$resource_map['permission']]) &&
-                        in_array(
+        if (is_array($resourceMap['actions'])) {
+            foreach ($resourceMap['actions'] as $action) {
+                if (!isset($permissions[$resourceMap['area']]) || !isset($permissions[$resourceMap['area']][$resourceMap['permission']]) || !in_array(
+                        $action,
+                        $permissions[$resourceMap['area']][$resourceMap['permission']]
+                    ) || (isset($permissions['_special']['removed'][$resourceMap['area']][$resourceMap['permission']]) && in_array(
                             $action,
-                            $permissions['_special']['removed'][$resource_map['area']][$resource_map['permission']]
-                        )
-                    )
+                            $permissions['_special']['removed'][$resourceMap['area']][$resourceMap['permission']]
+                        ))
                 ) {
                     $return = false;
                 }
@@ -340,7 +355,7 @@ abstract class AclManager
 
             return $return;
         } else {
-            return isset($permissions[$resource_map['area']][$resource_map['permission']]);
+            return isset($permissions[$resourceMap['area']][$resourceMap['permission']]);
         }
 
     }

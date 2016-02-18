@@ -1,144 +1,365 @@
 <?php
 
-namespace {
+namespace Signes\Acl;
 
-    use App\Models\Acl\Group;
-    use App\Models\Acl\Role;
-    use App\Models\Acl\User;
-    use Signes\Acl\Acl;
-    use Signes\Acl\Repository\SignesAclRepository;
+use Mockery;
+use Signes\Acl\Contract\AclRepository;
+use Signes\Acl\Contract\GroupInterface;
+use Signes\Acl\Contract\PermissionInterface;
+use Signes\Acl\Contract\RoleInterface;
+use Signes\Acl\Contract\UserInterface;
+
+/**
+ * Class AclTest
+ * @coversDefaultClass \Signes\Acl\Acl
+ *
+ * @group signes_acl
+ */
+class AclTest extends TestCase
+{
+    //        public function testCallIsAllow()
+    //        {
+    //
+    //            $resource = 'resource';
+    //            $user = Mockery::mock(UserInterface::class);
+    //
+    //            $mockRepository = Mockery::mock(AclRepository::class);
+    //
+    //            $object = new Acl($mockRepository);
+    //            $response = $object->isAllow($resource, $user);
+    //            $this->assertTrue($response);
+    //        }
 
     /**
-     * Class AclTest
-     * @coversDefaultClass \Signes\Acl\Acl
-     *
-     * @group signes_acl
+     * Test proxy call `createPermission`
+     * @covers ::createPermission
      */
-    class AclTest extends TestCase
+    public function testCallCreatePermissions()
     {
-        /**
-         * @var Acl
-         */
-        protected $acl;
+        $area = 'area';
+        $permission = 'permission';
+        $action = [];
+        $description = 'description';
 
-        /**
-         * Set up repository to tests
-         */
-        public function setUp()
-        {
-            parent::setUp();
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('createPermission')
+            ->with($area, $permission, $action, $description)
+            ->once()
+            ->andReturn(true);
 
-            $this->acl = $this->setUpAclSignes();
-        }
+        $object = new Acl($mockRepository);
+        $response = $object->createPermission($area, $permission, $action, $description);
+        $this->assertTrue($response);
+    }
 
-        /**
-         * Set up ACL with Signes provider
-         *
-         * @return Acl
-         */
-        protected function setUpAclSignes()
-        {
-            return new Acl(new SignesAclRepository());
-        }
 
-        /**
-         * Test namespace setter
-         * @covers ::setSiteNamespace
-         */
-        public function testNamespace()
-        {
-            $name = 'Test';
-            $this->acl->setSiteNamespace($name);
-            $repository = PHPUnit_Framework_Assert::readAttribute($this->acl, 'repository');
-            $this->assertEquals($name, PHPUnit_Framework_Assert::readAttribute($repository, 'appNamespace'));
-        }
+    /**
+     * Test proxy call `deletePermission`
+     * @covers ::deletePermission
+     */
+    public function testCallDeletePermission()
+    {
+        $area = 'area';
+        $permission = 123;
+        $action = [];
 
-        /**
-         * Test namespace setter
-         * @covers ::setUser
-         */
-        public function testSetUser()
-        {
-            $user = new User();
-            $user->login = 'TestUser';
-            $user->password = 'TestPassword';
-            $user->group_id = '2';
-            $user->save();
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('deletePermission')
+            ->with($area, (string) $permission, $action)
+            ->once()
+            ->andReturn(true);
 
-            $this->acl->setUser($user);
-            $user = PHPUnit_Framework_Assert::readAttribute($this->acl, 'currentUser');
+        $object = new Acl($mockRepository);
+        $response = $object->deletePermission($area, $permission, $action);
+        $this->assertTrue($response);
+    }
 
-            $this->assertEquals('TestUser', $user->login);
-            $this->assertEquals(2, $user->group_id);
-        }
+    /**
+     * Test proxy call `grantUserPermission`
+     * @covers ::grantUserPermission
+     */
+    public function testCallGrantUserPermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $user = Mockery::mock(UserInterface::class);
+        $actions = [];
+        $overwrite = false;
 
-        /**
-         * @covers ::createPermission
-         * @covers ::grantUserPermission
-         * @covers ::grantGroupPermission
-         * @covers ::grantRolePermission
-         * @covers ::grantGroupRole
-         * @covers ::grantUserRole
-         * @covers ::collectPermissions
-         * @covers ::collectUserPermissions
-         * @covers ::collectGroupPermissions
-         * @covers ::collectRolePermission
-         * @covers ::parseSpecialRoles
-         * @covers ::parsePermissions
-         * @covers ::__prepareResource
-         * @covers ::__compareResourceWithPermissions
-         * @covers ::isAllow
-         */
-        public function testAclAreaPermission()
-        {
-            $group = new Group();
-            $group->setName('TestGroup')->save();
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantUserPermission')->with($permission, $user, $actions)->once()->andReturn(
+                true
+            );
 
-            $role1 = new Role();
-            $role1->setName('TestRole1')->save();
+        $object = new Acl($mockRepository);
+        $response = $object->grantUserPermission($permission, $user, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
 
-            $role2 = new Role();
-            $role2->setName('TestRole2')->save();
+    /**
+     * Test proxy call `grantUserPermission`
+     * @covers ::grantUserPermission
+     */
+    public function testCallGrantUserPermissionWithOverwrite()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $user = Mockery::mock(UserInterface::class);
+        $actions = [];
+        $overwrite = true;
 
-            $role3 = new Role();
-            $role3->setName('TestRole3')->setFilter('R')->save();
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantUserPermission')->with($permission, $user, $actions)->once()->andReturn(
+                true
+            );
+        $mockRepository->shouldReceive('revokeUserPermission')->with($permission, $user)->once()->andReturnNull();
 
-            $permission1 = $this->acl->createPermission('zone1', 'access1', ['act1', 'act2', 'act3'], 'Zone 1');
-            $permission2 = $this->acl->createPermission('zone2', 'access2', ['act1', 'act2', 'act3'], 'Zone 2');
-            $permission3 = $this->acl->createPermission('zone3', 'access3', ['act1', 'act2', 'act3'], 'Zone 3');
+        $object = new Acl($mockRepository);
+        $response = $object->grantUserPermission($permission, $user, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
 
-            $user = new User();
-            $user->login = 'TestUser';
-            $user->password = 'TestPassword';
-            $user->setGroup($group);
-            $user->save();
+    /**
+     * Test proxy call `revokeUserPermission`
+     * @covers ::revokeUserPermission
+     */
+    public function testCallRevokeUserPermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $user = Mockery::mock(UserInterface::class);
 
-            // Connect user with permissions
-            $this->acl->grantUserPermission($permission1, $user, ['act1'], true);
-            $this->acl->grantUserPermission($permission2, $user, ['act1', 'act2', 'act3'], true);
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('revokeUserPermission')->with($permission, $user)->once()->andReturn(true);
 
-            // Connect group with permissions
-            $this->acl->grantGroupPermission($permission1, $group, ['act3'], true);
+        $object = new Acl($mockRepository);
+        $response = $object->revokeUserPermission($permission, $user);
+        $this->assertTrue($response);
+    }
 
-            // Connect roles with permissions
-            $this->acl->grantRolePermission($permission3, $role1, ['act1'], true);
-            $this->acl->grantRolePermission($permission1, $role2, ['act2'], true);
-            $this->acl->grantRolePermission($permission2, $role3, ['act2'], true);
+    /**
+     * Test proxy call `grantGroupPermission`
+     * @covers ::grantGroupPermission
+     */
+    public function testCallGrantGroupPermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+        $actions = [];
+        $overwrite = false;
 
-            // Connect user with roles
-            $this->acl->grantUserRole($role2, $user, true);
-            $this->acl->grantUserRole($role3, $user, true);
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantGroupPermission')->with($permission, $group, $actions)->once()->andReturn(
+                true
+            );
 
-            // Connect group with roles
-            $this->acl->grantGroupRole($role1, $group, true);
-            $this->acl->grantGroupRole($role2, $group, true);
+        $object = new Acl($mockRepository);
+        $response = $object->grantGroupPermission($permission, $group, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
 
-            $this->assertTrue($this->acl->isAllow('zone1.access1|act1.act2.act3', $user));
-            $this->assertTrue($this->acl->isAllow('zone2.access2|act1.act3', $user));
-            $this->assertTrue($this->acl->isAllow('zone3.access3|act1', $user));
+    /**
+     * Test proxy call `grantGroupPermission`
+     * @covers ::grantGroupPermission
+     */
+    public function testCallGrantGroupPermissionWithOverwrite()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+        $actions = [];
+        $overwrite = true;
 
-            // because act2 was revoked (R)
-            $this->assertFalse($this->acl->isAllow('zone2.access2|act1.act2.act3', $user));
-        }
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantGroupPermission')->with($permission, $group, $actions)->once()->andReturn(
+                true
+            );
+        $mockRepository->shouldReceive('revokeGroupPermission')->with($permission, $group)->once()->andReturnNull();
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantGroupPermission($permission, $group, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `revokeGroupPermission`
+     * @covers ::revokeGroupPermission
+     */
+    public function testCallRevokeGroupPermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('revokeGroupPermission')->with($permission, $group)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->revokeGroupPermission($permission, $group);
+        $this->assertTrue($response);
+    }
+
+
+    /**
+     * Test proxy call `grantRolePermission`
+     * @covers ::grantRolePermission
+     */
+    public function testCallGrantRolePermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $role = Mockery::mock(RoleInterface::class);
+        $actions = [];
+        $overwrite = false;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantRolePermission')->with($permission, $role, $actions)->once()->andReturn(
+                true
+            );
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantRolePermission($permission, $role, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `grantRolePermission`
+     * @covers ::grantRolePermission
+     */
+    public function testCallGrantRolePermissionWithOverwrite()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $role = Mockery::mock(RoleInterface::class);
+        $actions = [];
+        $overwrite = true;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantRolePermission')->with($permission, $role, $actions)->once()->andReturn(
+                true
+            );
+        $mockRepository->shouldReceive('revokeRolePermission')->with($permission, $role)->once()->andReturnNull();
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantRolePermission($permission, $role, $actions, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `revokeRolePermission`
+     * @covers ::revokeRolePermission
+     */
+    public function testCallRevokeRolePermission()
+    {
+        $permission = Mockery::mock(PermissionInterface::class);
+        $role = Mockery::mock(RoleInterface::class);
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('revokeRolePermission')->with($permission, $role)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->revokeRolePermission($permission, $role);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `grantUserRole`
+     * @covers ::grantUserRole
+     */
+    public function testCallGrantUserRole()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $user = Mockery::mock(UserInterface::class);
+        $overwrite = false;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantUserRole')->with($role, $user)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantUserRole($role, $user, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `grantUserRole`
+     * @covers ::grantUserRole
+     */
+    public function testCallGrantUserRoleWithOverwrite()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $user = Mockery::mock(UserInterface::class);
+        $overwrite = true;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantUserRole')->with($role, $user)->once()->andReturn(true);
+        $mockRepository->shouldReceive('revokeUserRole')->with($role, $user)->once()->andReturnNull();
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantUserRole($role, $user, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `revokeUserRole`
+     * @covers ::revokeUserRole
+     */
+    public function testCallRevokeUserRole()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $user = Mockery::mock(UserInterface::class);
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('revokeUserRole')->with($role, $user)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->revokeUserRole($role, $user);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `grantGroupRole`
+     * @covers ::grantGroupRole
+     */
+    public function testCallGrantGroupRole()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+        $overwrite = false;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantGroupRole')->with($role, $group)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantGroupRole($role, $group, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `grantGroupRole`
+     * @covers ::grantGroupRole
+     */
+    public function testCallGrantGroupRoleWithOverwrite()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+        $overwrite = true;
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('grantGroupRole')->with($role, $group)->once()->andReturn(true);
+        $mockRepository->shouldReceive('revokeGroupRole')->with($role, $group)->once()->andReturnNull();
+
+        $object = new Acl($mockRepository);
+        $response = $object->grantGroupRole($role, $group, $overwrite);
+        $this->assertTrue($response);
+    }
+
+    /**
+     * Test proxy call `revokeGroupRole`
+     * @covers ::revokeGroupRole
+     */
+    public function testCallRevokeGroupRole()
+    {
+        $role = Mockery::mock(RoleInterface::class);
+        $group = Mockery::mock(GroupInterface::class);
+
+        $mockRepository = Mockery::mock(AclRepository::class);
+        $mockRepository->shouldReceive('revokeGroupRole')->with($role, $group)->once()->andReturn(true);
+
+        $object = new Acl($mockRepository);
+        $response = $object->revokeGroupRole($role, $group);
+        $this->assertTrue($response);
     }
 }

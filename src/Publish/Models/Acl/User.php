@@ -9,8 +9,8 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Signes\Acl\GroupInterface;
-use Signes\Acl\UserInterface as SignesAclUserInterface;
+use Signes\Acl\Contract\GroupInterface;
+use Signes\Acl\Contract\UserInterface as SignesAclUserInterface;
 
 /**
  * Class User

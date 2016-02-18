@@ -4,8 +4,8 @@ namespace App\Models\Acl;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Signes\Acl\Exception\UnknownRoleFilter;
-use Signes\Acl\RoleInterface;
+use Signes\Acl\Exception\UnknownRoleFilterException;
+use Signes\Acl\Contract\RoleInterface;
 
 /**
  * Class Role
@@ -68,13 +68,13 @@ class Role extends Model implements RoleInterface
      *                            D - deny access to everything
      *                            R - revoke access to resource
      * @return $this
-     * @throws UnknownRoleFilter
+     * @throws UnknownRoleFilterException
      */
     public function setFilter($filter)
     {
         $filter = (string) $filter;
         if (!in_array($filter, $this->filters)) {
-            throw new UnknownRoleFilter("Unknown role filter: '{$filter}'");
+            throw new UnknownRoleFilterException("Unknown role filter: '{$filter}'");
         }
 
         $this->filter = $filter;

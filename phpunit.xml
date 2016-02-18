@@ -14,9 +14,6 @@
         <testsuite name="all">
             <directory>tests/</directory>
         </testsuite>
-        <testsuite name="schema">
-            <directory>tests/SchemaTest.php</directory>
-        </testsuite>
     </testsuites>
 
     <filter>

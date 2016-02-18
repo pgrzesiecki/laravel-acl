@@ -3,7 +3,7 @@
 namespace App\Models\Acl;
 
 use Illuminate\Database\Eloquent\Model;
-use Signes\Acl\PermissionInterface;
+use Signes\Acl\Contract\PermissionInterface;
 
 /**
  * Class Permission

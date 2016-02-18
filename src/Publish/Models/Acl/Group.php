@@ -4,7 +4,7 @@ namespace App\Models\Acl;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Signes\Acl\GroupInterface;
+use Signes\Acl\Contract\GroupInterface;
 
 /**
  * Class Group

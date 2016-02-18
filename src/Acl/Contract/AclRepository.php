@@ -1,30 +1,26 @@
 <?php
 
-namespace Signes\Acl\Repository;
+namespace Signes\Acl\Contract;
 
-use Signes\Acl\Exception\DuplicateEntry;
-use Signes\Acl\GroupInterface;
-use Signes\Acl\PermissionInterface;
-use Signes\Acl\RoleInterface;
-use Signes\Acl\UserInterface;
+use Signes\Acl\Exception\DuplicateEntryException;
 
 /**
  * Interface AclRepository
  *
- * @package    Signes\Acl
- * @subpackage Signes\Acl\Repository
+ * @package Signes\Acl\Contract
  */
 interface AclRepository
 {
     /**
-     * Return Guest object
+     * Return Guest object.
+     * Guest object is taken when no user is set in acl system.
      *
      * @return UserInterface
      */
     public function getGuest();
 
     /**
-     * Create new permission
+     * Create and persist new permission.
      *
      * @param string $area        ,area name
      * @param string $permission  , permission name
@@ -51,7 +47,7 @@ interface AclRepository
      * @param PermissionInterface $permission
      * @param GroupInterface $group
      * @param array $actions , actions array or true, if true all actions will be granted
-     * @throws DuplicateEntry
+     * @throws DuplicateEntryException
      */
     public function grantGroupPermission(PermissionInterface $permission, GroupInterface $group, $actions = []);
 
@@ -61,7 +57,7 @@ interface AclRepository
      * @param PermissionInterface $permission
      * @param UserInterface $user
      * @param array|true $actions , actions array or true, if true all actions will be granted
-     * @throws DuplicateEntry
+     * @throws DuplicateEntryException
      */
     public function grantUserPermission(PermissionInterface $permission, UserInterface $user, $actions = []);
 
@@ -71,7 +67,7 @@ interface AclRepository
      * @param PermissionInterface $permission
      * @param RoleInterface $role
      * @param array $actions , actions array or true, if true all actions will be granted
-     * @throws DuplicateEntry
+     * @throws DuplicateEntryException
      */
     public function grantRolePermission(PermissionInterface $permission, RoleInterface $role, $actions = []);
 
@@ -80,7 +76,7 @@ interface AclRepository
      *
      * @param RoleInterface $role
      * @param UserInterface $user
-     * @throws DuplicateEntry
+     * @throws DuplicateEntryException
      */
     public function grantUserRole(RoleInterface $role, UserInterface $user);
 
@@ -89,7 +85,7 @@ interface AclRepository
      *
      * @param RoleInterface $role
      * @param GroupInterface $group
-     * @throws DuplicateEntry
+     * @throws DuplicateEntryException
      */
     public function grantGroupRole(RoleInterface $role, GroupInterface $group);
 
@@ -145,4 +141,20 @@ interface AclRepository
      * @param string $namespace , new namespace
      */
     public function setSiteNamespace($namespace);
+
+    /**
+     * Get permission for given object.
+     *
+     * @param HavingPermissionsInterface $object
+     * @return \Traversable
+     */
+    public function getPermissionsFor(HavingPermissionsInterface $object);
+
+    /**
+     * Get roles for given object.
+     *
+     * @param HavingRolesInterface $object
+     * @return \Traversable
+     */
+    public function getRolesFor(HavingRolesInterface $object);
 }

@@ -2,6 +2,11 @@
 
 namespace Signes\Acl;
 
+use Signes\Acl\Contract\GroupInterface;
+use Signes\Acl\Contract\PermissionInterface;
+use Signes\Acl\Contract\RoleInterface;
+use Signes\Acl\Contract\UserInterface;
+
 /**
  * Class Acl
  *
@@ -12,17 +17,19 @@ class Acl extends AclManager
     /**
      * Check if resource is available
      *
-     * @param string $resource , resource identifier
+     * @param string $resource    , resource identifier
      * @param UserInterface $user , user object
      * @return bool
      */
     public function isAllow($resource, UserInterface $user = null)
     {
-        $resourceMap = $this->__prepareResource($resource);
-        $permissions = $this->collectPermissions($user);
-        return $this->__compareResourceWithPermissions($resourceMap, $permissions);
-    }
+        $this->ensureUser($user);
 
+        return $this->compareResourceWithPermissions(
+            $this->prepareResource($resource),
+            $this->collectPermissions()
+        );
+    }
 
     /**
      * Create new permission to database, and return it's id, or false if permission exists
@@ -67,7 +74,7 @@ class Acl extends AclManager
      * @param UserInterface $user
      * @param array $actions
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw @see \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw @see \Signes\Acl\Exception\DuplicateEntryException
      * @return mixed
      */
     public function grantUserPermission(
@@ -85,13 +92,23 @@ class Acl extends AclManager
     }
 
     /**
+     * @param PermissionInterface $permission
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
+    {
+        return $this->repository->revokeUserPermission($permission, $user);
+    }
+
+    /**
      * Grant group permission to specific actions
      *
      * @param PermissionInterface $permission
      * @param GroupInterface $group
      * @param array $actions
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw \Signes\Acl\Exception\DuplicateEntryException
      * @return mixed
      */
     public function grantGroupPermission(
@@ -109,13 +126,23 @@ class Acl extends AclManager
     }
 
     /**
+     * @param PermissionInterface $permission
+     * @param GroupInterface $group
+     * @return mixed
+     */
+    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
+    {
+        return $this->repository->revokeGroupPermission($permission, $group);
+    }
+
+    /**
      * Grant user permission to specific actions
      *
      * @param PermissionInterface $permission
      * @param RoleInterface $role
      * @param array $actions
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw \Signes\Acl\Exception\DuplicateEntryException
      * @return mixed
      */
     public function grantRolePermission(
@@ -133,12 +160,22 @@ class Acl extends AclManager
     }
 
     /**
+     * @param PermissionInterface $permission
+     * @param RoleInterface $role
+     * @return mixed
+     */
+    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
+    {
+        return $this->repository->revokeRolePermission($permission, $role);
+    }
+
+    /**
      * Grant user permission to specific actions
      *
      * @param RoleInterface $role
      * @param UserInterface $user
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw \Signes\Acl\Exception\DuplicateEntryException
      * @return mixed
      */
     public function grantUserRole(RoleInterface $role, UserInterface $user, $overwrite = false)
@@ -152,12 +189,22 @@ class Acl extends AclManager
     }
 
     /**
+     * @param RoleInterface $role
+     * @param UserInterface $user
+     * @return mixed
+     */
+    public function revokeUserRole(RoleInterface $role, UserInterface $user)
+    {
+        return $this->repository->revokeUserRole($role, $user);
+    }
+
+    /**
      * Grant user permission to specific actions
      *
      * @param RoleInterface $role
      * @param GroupInterface $group
      * @param bool $overwrite , if false and user - permission relation exists,
-     *                        will throw \Signes\Acl\Exception\DuplicateEntry
+     *                        will throw \Signes\Acl\Exception\DuplicateEntryException
      * @return mixed
      */
     public function grantGroupRole(RoleInterface $role, GroupInterface $group, $overwrite = false)
@@ -168,46 +215,6 @@ class Acl extends AclManager
         }
 
         return $this->repository->grantGroupRole($role, $group);
-    }
-
-    /**
-     * @param PermissionInterface $permission
-     * @param UserInterface $user
-     * @return mixed
-     */
-    public function revokeUserPermission(PermissionInterface $permission, UserInterface $user)
-    {
-        return $this->repository->revokeUserPermission($permission, $user);
-    }
-
-    /**
-     * @param PermissionInterface $permission
-     * @param GroupInterface $group
-     * @return mixed
-     */
-    public function revokeGroupPermission(PermissionInterface $permission, GroupInterface $group)
-    {
-        return $this->repository->revokeGroupPermission($permission, $group);
-    }
-
-    /**
-     * @param PermissionInterface $permission
-     * @param RoleInterface $role
-     * @return mixed
-     */
-    public function revokeRolePermission(PermissionInterface $permission, RoleInterface $role)
-    {
-        return $this->repository->revokeRolePermission($permission, $role);
-    }
-
-    /**
-     * @param RoleInterface $role
-     * @param UserInterface $user
-     * @return mixed
-     */
-    public function revokeUserRole(RoleInterface $role, UserInterface $user)
-    {
-        return $this->repository->revokeUserRole($role, $user);
     }
 
     /**

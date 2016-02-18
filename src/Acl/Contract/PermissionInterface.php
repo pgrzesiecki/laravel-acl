@@ -1,11 +1,11 @@
 <?php
 
-namespace Signes\Acl;
+namespace Signes\Acl\Contract;
 
 /**
  * Interface PermissionInterface
  *
- * @package Signes\Acl
+ * @package Signes\Acl\Contract
  */
 interface PermissionInterface
 {

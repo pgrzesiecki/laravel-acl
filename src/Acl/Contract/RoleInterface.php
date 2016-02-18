@@ -1,24 +1,16 @@
 <?php
 
-namespace Signes\Acl;
+namespace Signes\Acl\Contract;
 
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Signes\Acl\Exception\UnknownRoleFilter;
+use Signes\Acl\Exception\UnknownRoleFilterException;
 
 /**
  * Interface RoleInterface
  *
- * @package Signes\Acl
+ * @package Signes\Acl\Contract
  */
-interface RoleInterface
+interface RoleInterface extends HavingPermissionsInterface
 {
-    /**
-     * Get user role permissions
-     *
-     * @return BelongsToMany
-     */
-    public function getPermissions();
-
     /**
      * Set special filter.
      *
@@ -26,7 +18,7 @@ interface RoleInterface
      *                            A - allow access to everything
      *                            D - deny access to everything
      *                            R - revoke access to resource
-     * @throws UnknownRoleFilter
+     * @throws UnknownRoleFilterException
      * @return $this
      */
     public function setFilter($filter);
