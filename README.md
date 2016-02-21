@@ -2,6 +2,7 @@
 
 [![Latest Stable Version](https://poser.pugx.org/signes/acl/v/stable)](https://packagist.org/packages/signes/acl)
 [![Build Status](https://travis-ci.org/signes-pl/laravel-acl.svg?branch=master)](https://travis-ci.org/signes-pl/laravel-acl)
+[![Circle CI](https://circleci.com/gh/signes-pl/laravel-acl.svg?style=svg)](https://circleci.com/gh/signes-pl/laravel-acl)
 [![Total Downloads](https://poser.pugx.org/signes/acl/downloads)](https://packagist.org/packages/signes/acl)
 [![License](https://poser.pugx.org/signes/acl/license)](https://packagist.org/packages/signes/acl)
 

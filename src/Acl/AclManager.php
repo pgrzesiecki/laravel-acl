@@ -2,6 +2,7 @@
 
 namespace Signes\Acl;
 
+use Illuminate\Support\Arr;
 use Signes\Acl\Contract\AclRepository;
 use Signes\Acl\Contract\GroupInterface;
 use Signes\Acl\Contract\PermissionInterface;
@@ -134,17 +135,15 @@ abstract class AclManager
          * User may have many personal permissions, iterate through all of them.
          */
         foreach ($this->repository->getPermissionsFor($user) as $permission) {
-            $this->parsePermissions($permission, $permissionSet);
+            $permissionSet = $this->parsePermissions($permission, $permissionSet);
         };
 
         /**
          * User may have many roles permissions, iterate through all of them.
          */
-        $user->getRoles->each(
-            function ($role) use (&$permissionSet) {
-                $this->collectRolePermission($role, $permissionSet);
-            }
-        );
+        foreach ($this->repository->getRolesFor($user) as $role) {
+            $permissionSet = $this->collectRolePermission($role, $permissionSet);
+        }
 
         /**
          * User may have only one role
@@ -161,10 +160,11 @@ abstract class AclManager
      * @param PermissionInterface $permission
      * @param array $permissionSet
      * @param bool $removedPopulate
+     * @return array
      */
     protected function parsePermissions(
         PermissionInterface $permission,
-        array &$permissionSet,
+        array $permissionSet,
         $removedPopulate = false
     ) {
         $grantedActions = (array) ((isset($permission->pivot->actions)) ? unserialize(
@@ -187,6 +187,8 @@ abstract class AclManager
             $existed = array_get($permissionSet, $dotSet);
             array_set($permissionSet, $dotSet, array_unique(array_merge($existed, $allowedActions)));
         }
+
+        return $permissionSet;
     }
 
     /**
@@ -194,10 +196,10 @@ abstract class AclManager
      *
      * @param RoleInterface $role
      * @param array $permissionSet
+     * @return array
      */
-    private function collectRolePermission(RoleInterface $role, array &$permissionSet = [])
+    private function collectRolePermission(RoleInterface $role, array $permissionSet = [])
     {
-
         /**
          * Roles might contain very special filters
          */
@@ -207,8 +209,10 @@ abstract class AclManager
          * Role may have many permissions, iterate through all of them.
          */
         foreach ($this->repository->getPermissionsFor($role) as $permission) {
-            $this->parsePermissions($permission, $permissionSet, ($role->getFilter() === 'R'));
+            $permissionSet = $this->parsePermissions($permission, $permissionSet, ($role->getFilter() === 'R'));
         };
+
+        return $permissionSet;
     }
 
     /**
@@ -248,17 +252,15 @@ abstract class AclManager
          * Group may have many permissions, iterate through all of them.
          */
         foreach ($this->repository->getPermissionsFor($group) as $permission) {
-            $this->parsePermissions($permission, $permissionSet);
+            $permissionSet = $this->parsePermissions($permission, $permissionSet);
         };
 
         /**
          * Group may have many roles, iterate through all of them.
          */
-        $group->getRoles->each(
-            function ($role) use (&$permissionSet) {
-                $this->collectRolePermission($role, $permissionSet);
-            }
-        );
+        foreach ($this->repository->getRolesFor($group) as $role) {
+            $permissionSet = $this->collectRolePermission($role, $permissionSet);
+        }
     }
 
     /**
@@ -327,36 +329,44 @@ abstract class AclManager
         }
 
         /**
-         * If we do not have special roles, check build access array.
-         * By default user have access to resource.
+         * First we have to check access to area and permission.
+         * If user do not have access to this part, we skip check actions and return false.
          */
-        $return = true;
+        $hasAreaAccess = isset($permissions[$resourceMap['area']]);
+        $hasPermissionAccess = $hasAreaAccess && isset($permissions[$resourceMap['area']][$resourceMap['permission']]);
+        if (!$hasAreaAccess || !$hasPermissionAccess) {
+            return false;
+        }
 
         /**
          * If we request "actions" in resource, go through all requested actions and check
          * if we have access to all of this actions in requested area and permission name,
-         * or if action was not blocked.
-         *
-         * @see https://github.com/signes-pl/laravel-acl
+         * or if action was not blocked. IF at leas one of action is now allowed for user
+         * revoke access to resource and return false.
          */
         if (is_array($resourceMap['actions'])) {
             foreach ($resourceMap['actions'] as $action) {
-                if (!isset($permissions[$resourceMap['area']]) || !isset($permissions[$resourceMap['area']][$resourceMap['permission']]) || !in_array(
-                        $action,
-                        $permissions[$resourceMap['area']][$resourceMap['permission']]
-                    ) || (isset($permissions['_special']['removed'][$resourceMap['area']][$resourceMap['permission']]) && in_array(
-                            $action,
-                            $permissions['_special']['removed'][$resourceMap['area']][$resourceMap['permission']]
-                        ))
-                ) {
-                    $return = false;
+                $hasActionAccess = in_array($action, $permissions[$resourceMap['area']][$resourceMap['permission']]);
+                if (!$hasActionAccess || $this->isActionRevoked($action, $resourceMap, $permissions)) {
+                    return false;
                 }
             }
-
-            return $return;
-        } else {
-            return isset($permissions[$resourceMap['area']][$resourceMap['permission']]);
         }
 
+        return true;
+    }
+
+    /**
+     * Check if given action is revoked for given resource in given permission set
+     *
+     * @param $action
+     * @param $resourceMap
+     * @param $permissions
+     * @return bool
+     */
+    protected function isActionRevoked($action, $resourceMap, $permissions)
+    {
+        $revokedArray = Arr::get($permissions, "_special.removed.{$resourceMap['area']}.{$resourceMap['permission']}");
+        return is_array($revokedArray) && in_array($action, $revokedArray);
     }
 }
